@@ -1,0 +1,48 @@
+import { GoogleGenAI } from "@google/genai";
+
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
+if (!API_KEY) {
+    console.warn("Missing VITE_GEMINI_API_KEY in environment variables");
+}
+
+const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+// Model Registry based on requirements
+const MODEL_REGISTRY = {
+    FAST_EXPLANATION: "models/gemini-2.0-flash",
+    DEEP_REASONING: "models/gemini-2.0-flash", // Using Flash for speed/cost effectiveness in this demo, typically Pro
+    IMAGE_ANALYSIS: "models/gemini-2.0-flash",
+};
+
+export async function routeGeminiCall(
+    taskType: keyof typeof MODEL_REGISTRY,
+    prompt: string,
+    imageB64?: string
+): Promise<string> {
+    const modelName = MODEL_REGISTRY[taskType];
+    const model = ai.models.generateContent;
+
+    try {
+        const parts: any[] = [{ text: prompt }];
+
+        if (imageB64) {
+            parts.push({
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: imageB64.split(',')[1] || imageB64,
+                },
+            });
+        }
+
+        const response = await model({
+            model: modelName,
+            contents: [{ parts }],
+        });
+
+        return response.text || "";
+    } catch (error) {
+        console.error(`Gemini API Error (${taskType}):`, error);
+        throw error;
+    }
+}
