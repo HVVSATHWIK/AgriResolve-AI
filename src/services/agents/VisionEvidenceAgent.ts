@@ -28,7 +28,7 @@ export class VisionEvidenceAgent extends Agent {
       - raw_analysis: A brief technical description of the visual patterns.
     `;
 
-        const response = await routeGeminiCall("IMAGE_ANALYSIS", prompt, imageB64);
+        const response = await routeGeminiCall("VISION_FAST", prompt, imageB64);
         return this.parseJSON(response);
     }
 }

@@ -43,7 +43,7 @@ export class ArbitrationAgent extends Agent {
       - rationale: List of reasons for the decision.
     `;
 
-        const response = await routeGeminiCall("DEEP_REASONING", prompt);
+        const response = await routeGeminiCall("ARBITRATION_SMART", prompt);
         return this.parseJSON(response);
     }
 }

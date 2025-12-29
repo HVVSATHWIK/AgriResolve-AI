@@ -26,7 +26,7 @@ export class HealthyHypothesisAgent extends Agent {
       - arguments: List of strings arguing WHY it looks healthy (e.g. "Spots are irregular and suggest mechanical damage", "Green area dominates").
     `;
 
-        const response = await routeGeminiCall("DEEP_REASONING", prompt);
+        const response = await routeGeminiCall("DEBATE_HIGH_THROUGHPUT", prompt);
         const result = this.parseJSON(response);
 
         return {

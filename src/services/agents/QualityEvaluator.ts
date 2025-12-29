@@ -31,7 +31,7 @@ export class QualityEvaluator extends Agent {
       - reasoning: brief explanation
     `;
 
-        const response = await routeGeminiCall("IMAGE_ANALYSIS", prompt, imageB64);
+        const response = await routeGeminiCall("VISION_FAST", prompt, imageB64);
         return this.parseJSON(response);
     }
 }

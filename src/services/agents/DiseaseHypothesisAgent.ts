@@ -20,7 +20,7 @@ export class DiseaseHypothesisAgent extends Agent {
       - arguments: List of strings highlighting risks.
     `;
 
-        const response = await routeGeminiCall("DEEP_REASONING", prompt);
+        const response = await routeGeminiCall("DEBATE_HIGH_THROUGHPUT", prompt);
         const result = this.parseJSON(response);
 
         return {

@@ -20,7 +20,7 @@ export class ExplanationAgent extends Agent {
       - guidance: A list of 2-3 actionable steps. DO NOT prescribe chemicals. Suggest monitoring or expert consultation if needed.
     `;
 
-        const response = await routeGeminiCall("FAST_EXPLANATION", prompt);
+        const response = await routeGeminiCall("EXPLANATION_POLISHED", prompt);
         return this.parseJSON(response);
     }
 }

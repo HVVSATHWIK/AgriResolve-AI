@@ -6,6 +6,8 @@ import { AssessmentStatus, AssessmentData } from './types';
 import { runAgenticPipeline } from './services/orchestrator';
 import { HypothesisDebate } from './components/HypothesisDebate';
 import { FinalResults } from './components/FinalResults';
+import { AgentVisualizer } from './components/AgentVisualizer';
+import { ScanOverlay } from './components/ScanOverlay';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AssessmentStatus>(AssessmentStatus.IDLE);
@@ -107,6 +109,9 @@ const App: React.FC = () => {
                 <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100">
                   <img src={image!} alt="Uploaded leaf" className="w-full h-full object-cover" />
 
+                  {/* Scan Animation Overlay */}
+                  <ScanOverlay isActive={status === AssessmentStatus.PERCEIVING || status === AssessmentStatus.EVALUATING} />
+
                   {/* Vision Overlay Effect */}
                   {status === AssessmentStatus.PERCEIVING && (
                     <div className="absolute inset-0 bg-green-500/10 flex items-center justify-center">
@@ -136,36 +141,7 @@ const App: React.FC = () => {
 
             {/* Workflow Progress */}
             <div className="lg:col-span-7">
-              <StepIndicator currentStatus={status} />
-
-              {/* Pipeline Status Cards */}
-              <div className="space-y-4">
-                <div className={`p-6 rounded-2xl border transition-all duration-500 ${status === AssessmentStatus.PERCEIVING ? 'bg-white shadow-md border-green-200 ring-2 ring-green-100' : 'bg-gray-50/50 border-gray-100'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${status === AssessmentStatus.PERCEIVING ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-400'}`}>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className={`text-sm font-bold ${status === AssessmentStatus.PERCEIVING ? 'text-gray-900' : 'text-gray-400'}`}>Vision Evidence Agent</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">Neutral visual perception without diagnosis.</p>
-                    </div>
-                    {status === AssessmentStatus.PERCEIVING && <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>}
-                  </div>
-                </div>
-
-                <div className={`p-6 rounded-2xl border transition-all duration-500 ${status === AssessmentStatus.EVALUATING ? 'bg-white shadow-md border-green-200 ring-2 ring-green-100' : 'bg-gray-50/50 border-gray-100'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${status === AssessmentStatus.EVALUATING ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-400'}`}>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04m12.892 3.381A3.333 3.333 0 0112 15c-1.842 0-3.333-1.491-3.333-3.333m0 0c0-1.842 1.491-3.333 3.333-3.333m0 0c1.842 0 3.333 1.491 3.333 3.333M9 15c0 1.842 1.491 3.333 3.333 3.333m0 0c1.842 0 3.333-1.491 3.333-3.333" /></svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className={`text-sm font-bold ${status === AssessmentStatus.EVALUATING ? 'text-gray-900' : 'text-gray-400'}`}>Reliability Gate</h4>
-                      <p className="text-xs text-gray-500 mt-0.5">Validating signal quality to prevent hallucination.</p>
-                    </div>
-                    {status === AssessmentStatus.EVALUATING && <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>}
-                  </div>
-                </div>
-              </div>
+              <AgentVisualizer status={status} />
             </div>
           </div>
 
