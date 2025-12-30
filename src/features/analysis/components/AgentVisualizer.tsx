@@ -135,13 +135,26 @@ export const AgentVisualizer: React.FC<AgentVisualizerProps> = ({ status }) => {
                                 </motion.div>
 
                                 {/* Text Label - Absolute Positioned & Constrained Width */}
-                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[72px] text-center pointer-events-none">
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[120px] text-center pointer-events-none z-40">
                                     <span className={cn(
                                         "block text-[8px] md:text-[9px] font-bold uppercase tracking-wide leading-tight transition-colors duration-300 break-words",
                                         isActive ? "text-green-600" : isCompleted ? "text-green-700" : "text-gray-300"
                                     )}>
                                         {agent.label}
                                     </span>
+
+                                    {/* Active State Description */}
+                                    {isActive && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mt-1"
+                                        >
+                                            <span className="text-[9px] text-green-500 font-medium bg-white/90 px-2 py-0.5 rounded-full shadow-sm border border-green-100 whitespace-nowrap">
+                                                {agent.desc}
+                                            </span>
+                                        </motion.div>
+                                    )}
                                 </div>
                             </div>
 
