@@ -5,6 +5,7 @@ import { useAIChat } from '../hooks/useAIChat';
 import { AssessmentData } from '../../../types';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
+import { useLocationWeather } from '../hooks/useLocationWeather';
 
 interface AssistantWidgetProps {
     data: AssessmentData | null;
@@ -14,13 +15,23 @@ import { useTranslation } from 'react-i18next';
 
 export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
     const { t, i18n } = useTranslation();
-    const { messages, isLoading, isOpen, toggleChat, sendMessage } = useAIChat(data);
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const { isListening, transcript, startListening, stopListening, hasSupport: hasSTT } = useSpeechRecognition();
     const { isSpeaking, speak, cancel: stopSpeaking, hasSupport: hasTTS } = useTextToSpeech();
     const [isTtsMuted, setIsTtsMuted] = useState(false);
+
+    const {
+        consent: locationConsent,
+        hasGeolocation,
+        requestPermission: requestLocationPermission,
+        disable: disableLocation,
+        locationContextForPrompt,
+        refreshWeather,
+    } = useLocationWeather();
+
+    const { messages, isLoading, isOpen, toggleChat, sendMessage } = useAIChat(data, locationContextForPrompt);
 
     const speechLang = useMemo(() => {
         const code = (i18n.language || 'en').toLowerCase();
@@ -73,6 +84,12 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
     useEffect(() => {
         if (!isOpen) stopSpeaking();
     }, [isOpen, stopSpeaking]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        if (locationConsent !== 'granted') return;
+        refreshWeather();
+    }, [isOpen, locationConsent, refreshWeather]);
 
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
@@ -177,6 +194,49 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
 
                     {/* Input Area */}
                     <div className="p-3 bg-white border-t border-gray-100">
+                        {locationConsent === 'unknown' && (
+                            <div className="mb-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                                <div className="text-xs font-bold text-green-900">
+                                    {t('location_permission_title', { defaultValue: 'Improve accuracy with location?' })}
+                                </div>
+                                <div className="text-[11px] text-green-900/80 mt-0.5 leading-snug">
+                                    {t('location_permission_body', {
+                                        defaultValue:
+                                            'With your permission, we can use your approximate location to fetch local weather/temperature and tailor guidance. You can disable this anytime in your browser settings.',
+                                    })}
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            if (!hasGeolocation) {
+                                                disableLocation();
+                                                return;
+                                            }
+                                            const res = await requestLocationPermission();
+                                            if (res.ok) {
+                                                refreshWeather();
+                                            }
+                                        }}
+                                        className="text-xs font-bold bg-green-700 hover:bg-green-800 text-white px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                                        disabled={!hasGeolocation}
+                                    >
+                                        {t('allow_location', { defaultValue: 'Allow' })}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            // Store a preference to not ask repeatedly.
+                                            disableLocation();
+                                        }}
+                                        className="text-xs font-bold text-green-800 hover:text-green-900 px-2 py-1.5 rounded-full"
+                                    >
+                                        {t('skip_location', { defaultValue: 'Not now' })}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-green-500/20 focus-within:border-green-500 transition-all">
                             <input
                                 ref={inputRef}

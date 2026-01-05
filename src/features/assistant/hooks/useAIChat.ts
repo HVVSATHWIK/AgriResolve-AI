@@ -12,7 +12,7 @@ export interface ChatMessage {
 
 import { useTranslation } from 'react-i18next';
 
-export const useAIChat = (contextData: AssessmentData | null) => {
+export const useAIChat = (contextData: AssessmentData | null, locationContext?: string | null) => {
     const { t, i18n } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -68,12 +68,24 @@ export const useAIChat = (contextData: AssessmentData | null) => {
         
         IMPORTANT: The user is speaking in language code: "${i18n.language}".
         You MUST answer in this language.
+
+        If local context (location/weather) is provided, you MUST use it to tailor seasonality, irrigation timing, disease risk factors, and monitoring guidance.
+        Do NOT claim exact locality names if only coordinates are provided.
         
         PRINCIPLES:
         - Be helpful but conservative.
         - Do not invent certainty where there is none.
         - Use the specific leaf assessments provided below.
       `;
+
+            if (locationContext) {
+                systemContext += `
+
+        --- LOCAL CONTEXT (user permission granted) ---
+        ${locationContext}
+        --- END LOCAL CONTEXT ---
+        `;
+            }
 
             if (contextData && contextData.arbitrationResult) {
                 // Formatting Leaf Assessments for the prompt
