@@ -26,7 +26,7 @@ Built on the **Gemini 2.5** engine, it employs a unique **Multi-Agent Consensus 
 -   **10 Supported Languages**: English, Hindi, Telugu, Tamil, Malayalam, Kannada, Marathi, Bengali, Gujarati, Punjabi.
 -   **Instant Translation Cache**: Switch languages *after* a scan without re-running the heavy analysis.
 -   **Zero-Cost Switching**: Results are cached locally, so flipping between languages costs 0 API credits.
--   **Dynamic Content**: AI generates not just the UI, but the *analysis logic* (bullet points, rationale) in the target language.
+-   **Dynamic Content**: Analysis is generated in a stable English base and then translated for display to keep UI + AI output consistent and avoid mixed-language responses.
 
 ### 🧠 Multi-Agent Analysis Pipeline
 1.  **👁️ Vision Agent**: Scans textures and lesions (`Gemini 2.5 Vision`).
@@ -39,6 +39,18 @@ Built on the **Gemini 2.5** engine, it employs a unique **Multi-Agent Consensus 
 -   **3D Bio-Network Background**: Interactive neural particle system (`React Three Fiber`).
 -   **Glassmorphism UI**: Premium "Gunmetal" aesthetic with frosted glass elements.
 -   **Field Assistant Protocol**: Context-aware chat sidebar for follow-up questions.
+
+### 📍 Location-Aware Assistant (Optional)
+-   **Permission-Based**: The app asks for location access only when you open the Field Assistant (you can skip).
+-   **Weather/Temperature Context**: If granted, the assistant fetches current local weather via Open-Meteo (no API key) and tailors guidance (seasonality, irrigation timing, disease risk factors).
+-   **Privacy-Friendly**: Uses approximate coordinates only and does not claim exact locality names.
+
+### 🎙️ Voice (Optional)
+-   **STT (Speech-to-Text)**: Voice input using the browser Web Speech API.
+-   **TTS (Text-to-Speech)**: The assistant can speak responses, aligned to the currently selected UI language.
+
+### 🛡️ Safety Guardrails
+-   Refuses potentially dangerous instructions (e.g., chemical dosing/mixing) and provides safer next-step guidance.
 
 ## 🛠️ Technology Stack
 
