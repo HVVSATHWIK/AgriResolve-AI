@@ -7,9 +7,10 @@ type StoredCoords = { latitude: number; longitude: number; accuracy?: number; ti
 
 type StoredWeather = { weather: CurrentWeather; coords: { latitude: number; longitude: number }; fetchedAt: number };
 
-const LS_CONSENT = 'agriresolve_location_consent';
-const LS_COORDS = 'agriresolve_location_coords';
-const LS_WEATHER = 'agriresolve_weather_cache';
+// Bump keys to avoid getting stuck in a previous persisted "denied" state from older builds.
+const LS_CONSENT = 'agriresolve_location_consent_v2';
+const LS_COORDS = 'agriresolve_location_coords_v2';
+const LS_WEATHER = 'agriresolve_weather_cache_v2';
 
 const safeParse = <T,>(raw: string | null): T | null => {
   if (!raw) return null;
@@ -25,7 +26,7 @@ export const useLocationWeather = () => {
 
   const [consent, setConsent] = useState<LocationConsent>(() => {
     const stored = typeof window !== 'undefined' ? window.localStorage.getItem(LS_CONSENT) : null;
-    if (stored === 'granted' || stored === 'denied') return stored;
+    if (stored === 'granted' || stored === 'denied' || stored === 'unknown') return stored;
     return 'unknown';
   });
 
@@ -96,8 +97,9 @@ export const useLocationWeather = () => {
             persistConsent('denied');
             resolve({ ok: false, reason: 'denied' });
           } else {
-            // Position unavailable / timeout
-            persistConsent('denied');
+            // Position unavailable / timeout: do NOT persist a denial.
+            // Keep consent as "unknown" so we can ask again later.
+            persistConsent('unknown');
             resolve({ ok: false, reason: 'unavailable' });
           }
         },
@@ -113,7 +115,12 @@ export const useLocationWeather = () => {
   const refreshWeather = useCallback(async () => {
     if (consent !== 'granted' || !coords) return null;
 
-    const cached = safeParse<StoredWeather>(window.localStorage.getItem(LS_WEATHER));
+    let cached: StoredWeather | null = null;
+    try {
+      cached = safeParse<StoredWeather>(window.localStorage.getItem(LS_WEATHER));
+    } catch {
+      cached = null;
+    }
     const now = Date.now();
     const CACHE_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -168,6 +175,8 @@ export const useLocationWeather = () => {
       );
 
       if (observedAt) parts.push(observedAt);
+    } else {
+      parts.push('Current weather: (not yet fetched).');
     }
 
     if (weatherUpdatedAt) {

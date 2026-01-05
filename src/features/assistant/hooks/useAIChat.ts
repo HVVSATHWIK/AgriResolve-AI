@@ -71,6 +71,7 @@ export const useAIChat = (contextData: AssessmentData | null, locationContext?: 
 
         If local context (location/weather) is provided, you MUST use it to tailor seasonality, irrigation timing, disease risk factors, and monitoring guidance.
         Do NOT claim exact locality names if only coordinates are provided.
+                When local context is provided, explicitly acknowledge in the FIRST sentence that you considered local weather/season conditions (without naming a specific town/village).
         
         PRINCIPLES:
         - Be helpful but conservative.
