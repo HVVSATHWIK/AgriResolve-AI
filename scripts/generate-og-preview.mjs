@@ -31,51 +31,73 @@ async function main() {
 <svg xmlns="http://www.w3.org/2000/svg" width="${OG_W}" height="${OG_H}" viewBox="0 0 ${OG_W} ${OG_H}">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#052e16"/>
-      <stop offset="100%" stop-color="#166534"/>
+      <stop offset="0%" stop-color="#022c22"/> <!-- emerald-950 -->
+      <stop offset="50%" stop-color="#064e3b"/> <!-- emerald-900 -->
+      <stop offset="100%" stop-color="#065f46"/> <!-- emerald-800 -->
     </linearGradient>
     <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#84cc16" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#f97316" stop-opacity="0.12"/>
+      <stop offset="0%" stop-color="#84cc16" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#22c55e" stop-opacity="0.10"/>
     </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+    </pattern>
   </defs>
 
+  <!-- Background -->
   <rect width="100%" height="100%" fill="url(#bg)"/>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
   <rect x="0" y="0" width="100%" height="100%" fill="url(#glow)"/>
 
-  <g opacity="0.25">
-    <circle cx="980" cy="120" r="160" fill="#84cc16" opacity="0.18" />
-    <circle cx="1060" cy="510" r="220" fill="#f97316" opacity="0.12" />
+  <!-- Decorative Orbs -->
+  <g opacity="0.4">
+    <circle cx="1000" cy="100" r="300" fill="#16a34a" opacity="0.2" filter="blur(80px)" />
+    <circle cx="200" cy="500" r="250" fill="#15803d" opacity="0.2" filter="blur(60px)" />
   </g>
 
+  <!-- Glass Card Container -->
   <g>
-    <rect x="72" y="86" width="1056" height="458" rx="28" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)" />
+    <rect x="60" y="60" width="1080" height="510" rx="32" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+    <!-- Inner highlight -->
+    <rect x="62" y="62" width="1076" height="506" rx="30" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
   </g>
 
-  <image href="data:image/svg+xml;base64,${logoB64}" x="120" y="175" width="280" height="280" />
+  <!-- Logo Section -->
+  <g transform="translate(100, 165)">
+    <circle cx="150" cy="150" r="130" fill="rgba(255,255,255,0.05)" />
+    <image href="data:image/svg+xml;base64,${logoB64}" x="20" y="20" width="260" height="260" />
+  </g>
 
-  <text x="430" y="245" fill="#ffffff" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="64" font-weight="800">
-    ${escapeHtml(title)}
-  </text>
+  <!-- Text Content -->
+  <g transform="translate(460, 180)">
+    <text x="0" y="60" fill="#ffffff" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="800" letter-spacing="-1">
+      ${escapeHtml(title)}
+    </text>
+    
+    <!-- Subtitle lines -->
+    ${subtitle
+      .split('\n')
+      .map((line, i) => {
+        const y = 130 + i * 50;
+        return `<text x="0" y="${y}" fill="rgba(255,255,255,0.85)" font-family="Inter, system-ui, sans-serif" font-size="38" font-weight="500">${escapeHtml(line)}</text>`;
+      })
+      .join('\n')}
 
-  ${subtitle
-    .split('\n')
-    .map((line, i) => {
-      const y = 305 + i * 44;
-      return `<text x="430" y="${y}" fill="rgba(255,255,255,0.90)" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="34" font-weight="600">${escapeHtml(line)}</text>`;
-    })
-    .join('\n')}
+    <!-- Call to Action Badge -->
+    <g transform="translate(0, 200)">
+      <rect x="0" y="0" width="480" height="64" rx="32" fill="#16a34a" />
+      <text x="240" y="42" text-anchor="middle" fill="#ffffff" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700">
+        Try it now: agri-resolve-ai.vercel.app
+      </text>
+    </g>
+  </g>
 
-  <g>
-    <rect x="430" y="410" width="520" height="58" rx="29" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.16)" />
-    <text x="456" y="448" fill="#ffffff" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="24" font-weight="700">
-      Upload a leaf photo → Get guidance
+  <!-- Footer Features -->
+  <g transform="translate(100, 520)">
+    <text x="0" y="0" fill="rgba(255,255,255,0.6)" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="600" letter-spacing="1">
+      MULTILINGUAL • AI DIAGNOSTICS • INSTANT RESULTS
     </text>
   </g>
-
-  <text x="120" y="560" fill="rgba(255,255,255,0.70)" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" font-size="20" font-weight="600">
-    Multilingual • Safety-first • Farmer-friendly
-  </text>
 </svg>`;
 
   await sharp(Buffer.from(svg))
