@@ -14,6 +14,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
   const { t } = useTranslation();
 
   const [leafCrops, setLeafCrops] = useState<LeafCrop[]>([]);
+  const [sourceDims, setSourceDims] = useState<{ w: number; h: number } | null>(null);
 
   const leafCount = useMemo(() => {
     const n = data.leafAssessments?.length || 0;
@@ -25,14 +26,25 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
     const run = async () => {
       if (!sourceImage || !leafCount) {
         setLeafCrops([]);
+        setSourceDims(null);
         return;
       }
 
       try {
+        // Read natural dimensions so we can map crop bounding boxes onto the displayed image.
+        const img = new Image();
+        img.decoding = 'async';
+        img.src = sourceImage;
+        await img.decode();
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (!cancelled && w && h) setSourceDims({ w, h });
+
         const crops = await computeLeafCrops(sourceImage, leafCount);
         if (!cancelled) setLeafCrops(crops);
       } catch {
         if (!cancelled) setLeafCrops([]);
+        if (!cancelled) setSourceDims(null);
       }
     };
 
@@ -82,6 +94,41 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
           <Scan className="w-6 h-6 text-blue-600" />
           {t('image_overview', { defaultValue: 'Image Overview' })}
         </h2>
+
+        {sourceImage && sourceDims && leafCrops.length > 0 && (
+          <div className="mb-6">
+            <div className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">
+              {t('source_image', { defaultValue: 'Source Image' })}
+            </div>
+            <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
+              <img src={sourceImage} alt={t('source_image', { defaultValue: 'Source Image' })} className="w-full h-full object-cover" />
+
+              {/* Bounding boxes for detected leaves */}
+              {leafCrops.map((crop, index) => {
+                const leftPct = (crop.bbox.x / sourceDims.w) * 100;
+                const topPct = (crop.bbox.y / sourceDims.h) * 100;
+                const widthPct = (crop.bbox.w / sourceDims.w) * 100;
+                const heightPct = (crop.bbox.h / sourceDims.h) * 100;
+                const label = data.leafAssessments?.[index]?.id || `Leaf ${index + 1}`;
+
+                return (
+                  <div
+                    key={`${label}-${index}`}
+                    className="absolute border-2 border-green-600 rounded-lg pointer-events-none"
+                    style={{ left: `${leftPct}%`, top: `${topPct}%`, width: `${widthPct}%`, height: `${heightPct}%` }}
+                  >
+                    <div className="absolute -top-3 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-600 text-white border border-white/30">
+                      {label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-gray-400 font-medium">
+              {t('leaf_thumbnail_note', { defaultValue: 'Auto-cropped view (best effort).' })}
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100">
