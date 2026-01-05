@@ -65,12 +65,12 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl overflow-hidden relative">
         <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
           <Scan className="w-6 h-6 text-blue-600" />
-          Image Overview
+          {t('image_overview', { defaultValue: 'Image Overview' })}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100">
-            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-3">Vision Findings</h4>
+            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-3">{t('vision_findings', { defaultValue: 'Vision Findings' })}</h4>
             <ul className="space-y-2">
               {data.visionEvidence?.findings?.map((finding: string, i: number) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
@@ -82,24 +82,24 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
           </div>
 
           <div className="bg-gray-50/50 rounded-xl p-5 border border-gray-100">
-            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Uncertainty Factors</h4>
+            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">{t('uncertainty_factors', { defaultValue: 'Uncertainty Factors' })}</h4>
             {data.uncertaintyFactors && Object.entries(data.uncertaintyFactors).some(([k, v]) => v === true || (Array.isArray(v) && v.length > 0)) ? (
               <ul className="space-y-2">
                 {data.uncertaintyFactors.lowImageQuality && (
-                  <li className="flex items-center gap-2 text-sm text-amber-700"><AlertCircle className="w-4 h-4" /> Low Image Quality</li>
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><AlertCircle className="w-4 h-4" /> {t('low_image_quality', { defaultValue: 'Low Image Quality' })}</li>
                 )}
                 {data.uncertaintyFactors.multipleLeaves && (
-                  <li className="flex items-center gap-2 text-sm text-amber-700"><Leaf className="w-4 h-4" /> Multiple Leaves Detected</li>
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><Leaf className="w-4 h-4" /> {t('multiple_leaves_detected', { defaultValue: 'Multiple Leaves Detected' })}</li>
                 )}
                 {data.uncertaintyFactors.visuallySimilarConditions && (
-                  <li className="flex items-center gap-2 text-sm text-amber-700"><HelpCircle className="w-4 h-4" /> Ambiguous Symptoms</li>
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><HelpCircle className="w-4 h-4" /> {t('ambiguous_symptoms', { defaultValue: 'Ambiguous Symptoms' })}</li>
                 )}
                 {data.uncertaintyFactors.other?.map((factor: string, i: number) => (
                   <li key={i} className="flex items-center gap-2 text-sm text-gray-600">• {factor}</li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500 italic">No major uncertainty factors detected.</p>
+              <p className="text-sm text-gray-500 italic">{t('no_major_uncertainty', { defaultValue: 'No major uncertainty factors detected.' })}</p>
             )}
           </div>
         </div>
@@ -117,11 +117,11 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
                   </div>
                   <div>
                     <h3 className="font-bold text-gray-900">{leaf.id}</h3>
-                    <p className="text-xs text-gray-500">{leaf.condition === 'Unknown' ? 'Condition Unclear' : leaf.condition}</p>
+                    <p className="text-xs text-gray-500">{leaf.condition === 'Unknown' ? t('condition_unclear', { defaultValue: 'Condition Unclear' }) : leaf.condition}</p>
                   </div>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-bold border ${leaf.confidence > 0.8 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                  {formatConfidence(leaf.confidence)} Conf
+                  {formatConfidence(leaf.confidence)} {t('confidence_short', { defaultValue: 'Conf' })}
                 </div>
               </div>
 
@@ -141,14 +141,14 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
 
                 <div className="md:col-span-8 space-y-3">
                 <div>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Observations</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{t('observations', { defaultValue: 'Observations' })}</p>
                   <ul className="text-sm text-gray-700 space-y-1">
                     {leaf.observations.map((obs, i) => <li key={i}>• {obs}</li>)}
                   </ul>
                 </div>
                 {leaf.notes && (
                   <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-xs text-yellow-800">
-                    <strong>Note:</strong> {leaf.notes}
+                    <strong>{t('note_label', { defaultValue: 'Note:' })}</strong> {leaf.notes}
                   </div>
                 )}
                 </div>
@@ -158,7 +158,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
         ) : (
           /* Fallback for single leaf / legacy format */
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm text-center text-gray-500">
-            Single Subject Assessed. See Final Decision.
+            {t('single_subject_assessed', { defaultValue: 'Single Subject Assessed. See Final Decision.' })}
           </div>
         )}
       </div>

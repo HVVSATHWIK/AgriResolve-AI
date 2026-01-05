@@ -41,7 +41,21 @@ export const resources = {
             quality_summary: "Data Quality Summary",
             image_reliability: "Image Reliability",
             ethical_notice_title: "Important Ethical Notice",
-            ethical_notice_text: "This system is designed for risk signaling and decision support. It does not provide chemical or legal advice. If significant abnormalities are present, we recommend manual validation by a qualified agronomist."
+            ethical_notice_text: "This system is designed for risk signaling and decision support. It does not provide chemical or legal advice. If significant abnormalities are present, we recommend manual validation by a qualified agronomist.",
+
+            image_overview: "Image Overview",
+            vision_findings: "Vision Findings",
+            uncertainty_factors: "Uncertainty Factors",
+            low_image_quality: "Low Image Quality",
+            multiple_leaves_detected: "Multiple Leaves Detected",
+            ambiguous_symptoms: "Ambiguous Symptoms",
+            no_major_uncertainty: "No major uncertainty factors detected.",
+            observations: "Observations",
+            note_label: "Note:",
+            condition_unclear: "Condition Unclear",
+            confidence_short: "Conf",
+            single_subject_assessed: "Single Subject Assessed. See Final Decision.",
+            leaf_thumbnail_note: "Auto-cropped view (best effort)."
         }
     },
     hi: {
@@ -86,7 +100,21 @@ export const resources = {
             quality_summary: "डेटा गुणवत्ता सारांश",
             image_reliability: "छवि विश्वसनीयता",
             ethical_notice_title: "महत्वपूर्ण नैतिक सूचना",
-            ethical_notice_text: "यह प्रणाली जोखिम संकेत और निर्णय समर्थन के लिए डिज़ाइन की गई है। यह रासायनिक या कानूनी सलाह प्रदान नहीं करती है। यदि महत्वपूर्ण असामान्यताएं मौजूद हैं, तो हम एक योग्य कृषि विज्ञानी द्वारा मैनुअल सत्यापन की सलाह देते हैं।"
+            ethical_notice_text: "यह प्रणाली जोखिम संकेत और निर्णय समर्थन के लिए डिज़ाइन की गई है। यह रासायनिक या कानूनी सलाह प्रदान नहीं करती है। यदि महत्वपूर्ण असामान्यताएं मौजूद हैं, तो हम एक योग्य कृषि विज्ञानी द्वारा मैनुअल सत्यापन की सलाह देते हैं।",
+
+            image_overview: "छवि अवलोकन",
+            vision_findings: "दृष्टि निष्कर्ष",
+            uncertainty_factors: "अनिश्चितता कारक",
+            low_image_quality: "कम छवि गुणवत्ता",
+            multiple_leaves_detected: "कई पत्ते मिले",
+            ambiguous_symptoms: "अस्पष्ट लक्षण",
+            no_major_uncertainty: "कोई प्रमुख अनिश्चितता कारक नहीं मिले।",
+            observations: "अवलोकन",
+            note_label: "नोट:",
+            condition_unclear: "स्थिति स्पष्ट नहीं",
+            confidence_short: "विश्वास",
+            single_subject_assessed: "एकल विषय का आकलन किया गया। अंतिम निर्णय देखें।",
+            leaf_thumbnail_note: "स्वचालित क्रॉप (सर्वोत्तम प्रयास)।"
         }
     },
     te: {
@@ -131,7 +159,21 @@ export const resources = {
             quality_summary: "డేటా నాణ్యత సారాంశం",
             image_reliability: "చిత్ర విశ్వసనీయత",
             ethical_notice_title: "ముఖ్యమైన నైతిక గమనిక",
-            ethical_notice_text: "ఈ వ్యవస్థ ప్రమాద సంకేతాలు మరియు నిర్ణయ మద్దతు కోసం రూపొందించబడింది. ఇది రసాయన లేదా న్యాయ సలహాలను అందించదు. గణనీయమైన అసాధారణతలు ఉంటే, అర్హత కలిగిన వ్యవసాయ శాస్త్రవేత్త ద్వారా మాన్యువల్ ధృవీకరణను మేము సిఫార్సు చేస్తున్నాము."
+            ethical_notice_text: "ఈ వ్యవస్థ ప్రమాద సంకేతాలు మరియు నిర్ణయ మద్దతు కోసం రూపొందించబడింది. ఇది రసాయన లేదా న్యాయ సలహాలను అందించదు. గణనీయమైన అసాధారణతలు ఉంటే, అర్హత కలిగిన వ్యవసాయ శాస్త్రవేత్త ద్వారా మాన్యువల్ ధృవీకరణను మేము సిఫార్సు చేస్తున్నాము.",
+
+            image_overview: "చిత్ర సమీక్ష",
+            vision_findings: "దృశ్య కనుగొనింపులు",
+            uncertainty_factors: "అనిశ్చితి అంశాలు",
+            low_image_quality: "తక్కువ చిత్రం నాణ్యత",
+            multiple_leaves_detected: "బహుళ ఆకులు గుర్తించబడ్డాయి",
+            ambiguous_symptoms: "అస్పష్ట లక్షణాలు",
+            no_major_uncertainty: "ప్రధాన అనిశ్చితి అంశాలు కనిపించలేదు.",
+            observations: "పరిశీలనలు",
+            note_label: "గమనిక:",
+            condition_unclear: "స్థితి స్పష్టంగా లేదు",
+            confidence_short: "నమ్మకం",
+            single_subject_assessed: "ఒకే అంశం అంచనా వేయబడింది. తుది నిర్ణయం చూడండి.",
+            leaf_thumbnail_note: "స్వయంచాలక క్రాప్ (ఉత్తమ ప్రయత్నం)."
         }
     },
     ta: {
@@ -176,7 +218,21 @@ export const resources = {
             quality_summary: "தரத் தரவு சுருக்கம்",
             image_reliability: "பட நம்பகத்தன்மை",
             ethical_notice_title: "முக்கியமான அறிவிப்பு",
-            ethical_notice_text: "இந்த அமைப்பு ஆபத்து சமிக்ஞை மற்றும் முடிவு ஆதரவுக்காக வடிவமைக்கப்பட்டுள்ளது. இது இரசாயன அல்லது சட்ட ஆலோசனையை வழங்காது. குறிப்பிடத்தக்க அசாதாரணங்கள் இருந்தால், தகுதியான வேளாண் வல்லுநரால் சரிபார்க்க பரிந்துரைக்கிறோம்."
+            ethical_notice_text: "இந்த அமைப்பு ஆபத்து சமிக்ஞை மற்றும் முடிவு ஆதரவுக்காக வடிவமைக்கப்பட்டுள்ளது. இது இரசாயன அல்லது சட்ட ஆலோசனையை வழங்காது. குறிப்பிடத்தக்க அசாதாரணங்கள் இருந்தால், தகுதியான வேளாண் வல்லுநரால் சரிபார்க்க பரிந்துரைக்கிறோம்.",
+
+            image_overview: "படச் சுருக்கம்",
+            vision_findings: "பார்வை கண்டுபிடிப்புகள்",
+            uncertainty_factors: "நிச்சயமின்மை காரணிகள்",
+            low_image_quality: "குறைந்த படத் தரம்",
+            multiple_leaves_detected: "பல இலைகள் கண்டறியப்பட்டது",
+            ambiguous_symptoms: "தெளிவில்லா அறிகுறிகள்",
+            no_major_uncertainty: "முக்கிய நிச்சயமின்மை காரணிகள் எதுவும் இல்லை.",
+            observations: "கவனிப்புகள்",
+            note_label: "குறிப்பு:",
+            condition_unclear: "நிலை தெளிவல்ல",
+            confidence_short: "நம்பிக்கை",
+            single_subject_assessed: "ஒரே பொருள் மதிப்பீடு செய்யப்பட்டது. இறுதி தீர்ப்பைப் பார்க்கவும்.",
+            leaf_thumbnail_note: "தானாக வெட்டப்பட்டது (மிகச் சிறந்த முயற்சி)."
         }
     },
     ml: {
@@ -221,7 +277,16 @@ export const resources = {
             quality_summary: "ഡാറ്റ ഗുണനിലവാര സംഗ്രഹം",
             image_reliability: "ചിത്ര വിശ്വാസ്യത",
             ethical_notice_title: "പ്രധാന അറിയിപ്പ്",
-            ethical_notice_text: "ഈ സംവിധാനം റിസ്ക് സിഗ്നലിങ്ങിനും തീരുമാന പിന്തുണക്കും വേണ്ടി രൂപകൽപ്പന ചെയ്തതാണ്. ഇത് രാസവസ്തുക്കളോ നിയമപരമായ ഉപദേശമോ നൽകുന്നില്ല. കാര്യമായ അപാകതകൾ ഉണ്ടെങ്കിൽ, യോഗ്യനായ ഒരു കാർഷിക വിദഗ്ദ്ധനെക്കൊണ്ട് പരിശോധിക്കാൻ ഞങ്ങൾ ശുപാർശ ചെയ്യുന്നു."
+            ethical_notice_text: "ഈ സംവിധാനം റിസ്ക് സിഗ്നലിങ്ങിനും തീരുമാന പിന്തുണക്കും വേണ്ടി രൂപകൽപ്പന ചെയ്തതാണ്. ഇത് രാസവസ്തുക്കളോ നിയമപരമായ ഉപദേശമോ നൽകുന്നില്ല. കാര്യമായ അപാകതകൾ ഉണ്ടെങ്കിൽ, യോഗ്യനായ ഒരു കാർഷിക വിദഗ്ദ്ധനെക്കൊണ്ട് പരിശോധിക്കാൻ ഞങ്ങൾ ശുപാർശ ചെയ്യുന്നു.",
+            image_overview: "ചിത്ര അവലോകനം",
+            vision_findings: "ദൃശ്യ കണ്ടെത്തലുകൾ",
+            uncertainty_factors: "അനിശ്ചിതത്വ ഘടകങ്ങൾ",
+            observations: "നിരീക്ഷണങ്ങൾ",
+            note_label: "കുറിപ്പ്:",
+            condition_unclear: "സ്ഥിതി വ്യക്തമല്ല",
+            confidence_short: "വിശ്വാസം",
+            single_subject_assessed: "ഒറ്റ വിഷയം വിലയിരുത്തി. അന്തിമ തീരുമാനം കാണുക.",
+            leaf_thumbnail_note: "താനേ ക്രോപ്പ് ചെയ്തത് (മികച്ച ശ്രമം)."
         }
     },
     kn: {
@@ -266,7 +331,16 @@ export const resources = {
             quality_summary: "ಡೇಟಾ ಗುಣಮಟ್ಟ ಸಾರಾಂಶ",
             image_reliability: "ಚಿತ್ರದ ವಿಶ್ವಾಸಾರ್ಹತೆ",
             ethical_notice_title: "ಪ್ರಮುಖ ಸೂಚನೆ",
-            ethical_notice_text: "ಈ ವ್ಯವಸ್ಥೆಯು ಕೇವಲ ನಿರ್ಧಾರ ಬೆಂಬಲಕ್ಕಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ. ಇದು ರಾಸಾಯನಿಕ ಅಥವಾ ಕಾನೂನು ಸಲಹೆಯನ್ನು ನೀಡುವುದಿಲ್ಲ. ಗಮನಾರ್ಹ ಅಸಹಜತೆಗಳಿದ್ದರೆ, ಕೃಷಿ ತಜ್ಞರಿಂದ ಪರಿಶೀಲಿಸಲು ನಾವು ಶಿಫಾರಸು ಮಾಡುತ್ತೇವೆ."
+            ethical_notice_text: "ಈ ವ್ಯವಸ್ಥೆಯು ಕೇವಲ ನಿರ್ಧಾರ ಬೆಂಬಲಕ್ಕಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ. ಇದು ರಾಸಾಯನಿಕ ಅಥವಾ ಕಾನೂನು ಸಲಹೆಯನ್ನು ನೀಡುವುದಿಲ್ಲ. ಗಮನಾರ್ಹ ಅಸಹಜತೆಗಳಿದ್ದರೆ, ಕೃಷಿ ತಜ್ಞರಿಂದ ಪರಿಶೀಲಿಸಲು ನಾವು ಶಿಫಾರಸು ಮಾಡುತ್ತೇವೆ.",
+            image_overview: "ಚಿತ್ರ ಅವಲೋಕನ",
+            vision_findings: "ದೃಷ್ಟಿ ಕಂಡುಬಂದವು",
+            uncertainty_factors: "ಅನಿಶ್ಚಿತತಾ ಅಂಶಗಳು",
+            observations: "ನಿರೀಕ್ಷಣೆಗಳು",
+            note_label: "ಸೂಚನೆ:",
+            condition_unclear: "ಸ್ಥಿತಿ ಸ್ಪಷ್ಟವಿಲ್ಲ",
+            confidence_short: "ವಿಶ್ವಾಸ",
+            single_subject_assessed: "ಒಂದು ವಿಷಯವನ್ನು ಮೌಲ್ಯಮಾಪನ ಮಾಡಲಾಗಿದೆ. ಅಂತಿಮ ತೀರ್ಪನ್ನು ನೋಡಿ.",
+            leaf_thumbnail_note: "ಸ್ವಯಂ-ಕ್ರಾಪ್ ಮಾಡಿದ ದೃಶ್ಯ (ಅತ್ಯುತ್ತಮ ಪ್ರಯತ್ನ)."
         }
     },
     mr: {
@@ -311,7 +385,16 @@ export const resources = {
             quality_summary: "डेटा गुणवत्ता सारांश",
             image_reliability: "प्रतिमा विश्वसनीयता",
             ethical_notice_title: "महत्वाची सूचना",
-            ethical_notice_text: "ही प्रणाली जोखीम आणि निर्णय समर्थनासाठी डिझाइन केली आहे. हे रासायनिक किंवा कायदेशीर सल्ला देत नाही. महत्त्वपूर्ण असामान्यता असल्यास, आम्ही कृषी तज्ञाद्वारे मॅन्युअल पडताळणीची शिफारस करतो."
+            ethical_notice_text: "ही प्रणाली जोखीम आणि निर्णय समर्थनासाठी डिझाइन केली आहे. हे रासायनिक किंवा कायदेशीर सल्ला देत नाही. महत्त्वपूर्ण असामान्यता असल्यास, आम्ही कृषी तज्ञाद्वारे मॅन्युअल पडताळणीची शिफारस करतो.",
+            image_overview: "प्रतिमा आढावा",
+            vision_findings: "दृश्य निष्कर्ष",
+            uncertainty_factors: "अनिश्चितता घटक",
+            observations: "निरीक्षणे",
+            note_label: "नोंद:",
+            condition_unclear: "स्थिती अस्पष्ट",
+            confidence_short: "विश्वास",
+            single_subject_assessed: "एकच विषय मूल्यांकन झाला. अंतिम निर्णय पहा.",
+            leaf_thumbnail_note: "स्वयंचलित क्रॉप (सर्वोत्तम प्रयत्न)."
         }
     },
     bn: {
@@ -356,7 +439,16 @@ export const resources = {
             quality_summary: "ডেটা গুণমান সারাংশ",
             image_reliability: "ছবির নির্ভরযোগ্যতা",
             ethical_notice_title: "গুরুত্বপূর্ণ বিজ্ঞপ্তি",
-            ethical_notice_text: "এই সিস্টেম ঝুঁকি সংকেত এবং সিদ্ধান্ত সমর্থনের জন্য ডিজাইন করা হয়েছে। এটি রাসায়নিক বা আইনি পরামর্শ প্রদান করে না। উল্লেখযোগ্য অস্বাভাবিকতা থাকলে, আমরা কৃষিবিদের সাথে পরামর্শ করার পরামর্শ দিই।"
+            ethical_notice_text: "এই সিস্টেম ঝুঁকি সংকেত এবং সিদ্ধান্ত সমর্থনের জন্য ডিজাইন করা হয়েছে। এটি রাসায়নিক বা আইনি পরামর্শ প্রদান করে না। উল্লেখযোগ্য অস্বাভাবিকতা থাকলে, আমরা কৃষিবিদের সাথে পরামর্শ করার পরামর্শ দিই।",
+            image_overview: "ছবির ওভারভিউ",
+            vision_findings: "ভিশন ফলাফল",
+            uncertainty_factors: "অনিশ্চয়তার কারণ",
+            observations: "পর্যবেক্ষণ",
+            note_label: "নোট:",
+            condition_unclear: "অবস্থা স্পষ্ট নয়",
+            confidence_short: "বিশ্বাস",
+            single_subject_assessed: "একটি বিষয় মূল্যায়ন করা হয়েছে। চূড়ান্ত সিদ্ধান্ত দেখুন।",
+            leaf_thumbnail_note: "স্বয়ংক্রিয়ভাবে ক্রপ করা (সর্বোচ্চ চেষ্টা)।"
         }
     },
     gu: {
@@ -401,7 +493,16 @@ export const resources = {
             quality_summary: "ડેટા ગુણવત્તા સારાંશ",
             image_reliability: "છબી વિશ્વસનીયતા",
             ethical_notice_title: "મહત્વપૂર્ણ સૂચના",
-            ethical_notice_text: "આ સિસ્ટમ જોખમ સંકેત અને નિર્ણય સમર્થન માટે બનાવવામાં આવી છે. આ રાસાયણિક કે કાનૂની સલાહ આપતું નથી. જો કોઈ મોટી અસામાન્યતા હોય, તો કૃષિશાસ્ત્રીનો સંપર્ક કરો."
+            ethical_notice_text: "આ સિસ્ટમ જોખમ સંકેત અને નિર્ણય સમર્થન માટે બનાવવામાં આવી છે. આ રાસાયણિક કે કાનૂની સલાહ આપતું નથી. જો કોઈ મોટી અસામાન્યતા હોય, તો કૃષિશાસ્ત્રીનો સંપર્ક કરો.",
+            image_overview: "છબીની ઝાંખી",
+            vision_findings: "દૃશ્ય શોધો",
+            uncertainty_factors: "અનિશ્ચિતતા ઘટકો",
+            observations: "નિરીક્ષણો",
+            note_label: "નોંધ:",
+            condition_unclear: "સ્થિતિ અસ્પષ્ટ",
+            confidence_short: "વિશ્વાસ",
+            single_subject_assessed: "એક જ વિષયનું મૂલ્યાંકન થયું. અંતિમ નિર્ણય જુઓ.",
+            leaf_thumbnail_note: "સ્વચાલિત ક્રોપ (શ્રેષ્ઠ પ્રયાસ)."
         }
     },
     pa: {
@@ -446,7 +547,16 @@ export const resources = {
             quality_summary: "ਡਾਟਾ ਗੁਣਵੱਤਾ ਸਾਰ",
             image_reliability: "ਤਸਵੀਰ ਭਰੋਸੇਯੋਗਤਾ",
             ethical_notice_title: "ਮਹੱਤਵਪੂਰਨ ਨੋਟਿਸ",
-            ethical_notice_text: "ਇਹ ਸਿਸਟਮ ਜੋਖਮ ਸੰਕੇਤਾਂ ਅਤੇ ਫੈਸਲੇ ਸਮਰਥਨ ਲਈ ਤਿਆਰ ਕੀਤਾ ਗਿਆ ਹੈ। ਇਹ ਰਸਾਇਣਕ ਜਾਂ ਕਾਨੂੰਨੀ ਸਲਾਹ ਨਹੀਂ ਦਿੰਦਾ। ਜੇ ਵੱਡੀਆਂ ਅਸਾਮਾਨਤਾਵਾਂ ਹਨ, ਤਾਂ ਖੇਤੀ ਮਾਹਿਰ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।"
+            ethical_notice_text: "ਇਹ ਸਿਸਟਮ ਜੋਖਮ ਸੰਕੇਤਾਂ ਅਤੇ ਫੈਸਲੇ ਸਮਰਥਨ ਲਈ ਤਿਆਰ ਕੀਤਾ ਗਿਆ ਹੈ। ਇਹ ਰਸਾਇਣਕ ਜਾਂ ਕਾਨੂੰਨੀ ਸਲਾਹ ਨਹੀਂ ਦਿੰਦਾ। ਜੇ ਵੱਡੀਆਂ ਅਸਾਮਾਨਤਾਵਾਂ ਹਨ, ਤਾਂ ਖੇਤੀ ਮਾਹਿਰ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।",
+            image_overview: "ਤਸਵੀਰ ਝਲਕ",
+            vision_findings: "ਦ੍ਰਿਸ਼ਟੀ ਖੋਜਾਂ",
+            uncertainty_factors: "ਅਨਿਸ਼ਚਿਤਤਾ ਕਾਰਕ",
+            observations: "ਨਿਰੀਖਣ",
+            note_label: "ਨੋਟ:",
+            condition_unclear: "ਹਾਲਤ ਅਸਪਸ਼ਟ",
+            confidence_short: "ਭਰੋਸਾ",
+            single_subject_assessed: "ਇੱਕ ਹੀ ਵਿਸ਼ਾ ਮੁਲਾਂਕਣ ਕੀਤਾ ਗਿਆ। ਅੰਤਿਮ ਫੈਸਲਾ ਵੇਖੋ।",
+            leaf_thumbnail_note: "ਆਪੇ ਕ੍ਰਾਪ ਕੀਤਾ (ਸਭ ਤੋਂ ਵਧੀਆ ਕੋਸ਼ਿਸ਼)।"
         }
     }
 };
