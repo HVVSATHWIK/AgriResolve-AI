@@ -1,8 +1,10 @@
-import React, { useRef, useEffect } from 'react';
-import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
+import { MessageSquare, X, Send, Bot, User, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat } from '../hooks/useAIChat';
 import { AssessmentData } from '../../../types';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
 interface AssistantWidgetProps {
     data: AssessmentData | null;
@@ -11,10 +13,28 @@ interface AssistantWidgetProps {
 import { useTranslation } from 'react-i18next';
 
 export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { messages, isLoading, isOpen, toggleChat, sendMessage } = useAIChat(data);
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const { isListening, transcript, startListening, stopListening, hasSupport: hasSTT } = useSpeechRecognition();
+    const { isSpeaking, speak, cancel: stopSpeaking, hasSupport: hasTTS } = useTextToSpeech();
+    const [isTtsMuted, setIsTtsMuted] = useState(false);
+
+    const speechLang = useMemo(() => {
+        const code = (i18n.language || 'en').toLowerCase();
+        if (code.startsWith('hi')) return 'hi-IN';
+        if (code.startsWith('te')) return 'te-IN';
+        if (code.startsWith('ta')) return 'ta-IN';
+        if (code.startsWith('ml')) return 'ml-IN';
+        if (code.startsWith('kn')) return 'kn-IN';
+        if (code.startsWith('mr')) return 'mr-IN';
+        if (code.startsWith('bn')) return 'bn-IN';
+        if (code.startsWith('gu')) return 'gu-IN';
+        if (code.startsWith('pa')) return 'pa-IN';
+        return 'en-US';
+    }, [i18n.language]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -25,6 +45,7 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
 
     const handleSend = () => {
         if (inputRef.current?.value) {
+            stopSpeaking();
             sendMessage(inputRef.current.value);
             inputRef.current.value = '';
         }
@@ -33,6 +54,25 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') handleSend();
     };
+
+    useEffect(() => {
+        if (!transcript || !inputRef.current) return;
+        inputRef.current.value = transcript;
+    }, [transcript]);
+
+    useEffect(() => {
+        if (!hasTTS || isTtsMuted) return;
+        const lastMsg = messages[messages.length - 1];
+        if (!lastMsg) return;
+        if (isLoading) return;
+        if (lastMsg.sender !== 'ai') return;
+
+        speak(lastMsg.text, speechLang);
+    }, [messages, isLoading, hasTTS, isTtsMuted, speak, speechLang]);
+
+    useEffect(() => {
+        if (!isOpen) stopSpeaking();
+    }, [isOpen, stopSpeaking]);
 
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
@@ -54,9 +94,34 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={toggleChat} className="p-1 hover:bg-white/10 rounded-full transition-colors">
-                            <X className="w-5 h-5 text-white/80" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!hasTTS) return;
+                                    if (isTtsMuted) {
+                                        setIsTtsMuted(false);
+                                    } else {
+                                        setIsTtsMuted(true);
+                                        stopSpeaking();
+                                    }
+                                }}
+                                className="p-1 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+                                disabled={!hasTTS}
+                                aria-label={isTtsMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
+                                title={isTtsMuted ? 'Unmute' : 'Mute'}
+                            >
+                                {isTtsMuted ? (
+                                    <VolumeX className="w-5 h-5 text-white/80" />
+                                ) : (
+                                    <Volume2 className="w-5 h-5 text-white/80" />
+                                )}
+                            </button>
+
+                            <button onClick={toggleChat} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+                                <X className="w-5 h-5 text-white/80" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages Area */}
@@ -120,6 +185,26 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
                                 className="flex-1 bg-transparent outline-none text-sm text-gray-900 placeholder:text-gray-400"
                                 onKeyDown={handleKeyDown}
                             />
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!hasSTT) return;
+                                    if (isListening) stopListening();
+                                    else startListening(speechLang);
+                                }}
+                                className="p-1.5 rounded-full text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                disabled={!hasSTT || isLoading}
+                                aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+                                title={isListening ? 'Stop voice input' : 'Start voice input'}
+                            >
+                                {isListening ? (
+                                    <MicOff className="w-4 h-4" />
+                                ) : (
+                                    <Mic className="w-4 h-4" />
+                                )}
+                            </button>
+
                             <button
                                 onClick={handleSend}
                                 className="p-1.5 bg-green-600 rounded-full text-white hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
