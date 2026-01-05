@@ -30,4 +30,17 @@ export interface AssessmentData {
     summary: string;
     guidance: string[];
   };
+  leafAssessments?: Array<{
+    id: string; // "Leaf A", "Leaf B", "Leaf C"
+    observations: string[];
+    condition: string;
+    confidence: number;
+    notes: string;
+  }>;
+  uncertaintyFactors?: {
+    lowImageQuality: boolean;
+    multipleLeaves: boolean;
+    visuallySimilarConditions: boolean;
+    other: string[];
+  };
 }

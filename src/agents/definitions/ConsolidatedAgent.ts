@@ -4,78 +4,84 @@ import { AssessmentData } from '../../types';
 export class ConsolidatedAgent {
   async run(imageB64: string, language: string = 'en'): Promise<AssessmentData> {
     const prompt = `
-            You are the Consolidated Agricultural Intelligence (CAI), a highly advanced diagnostic engine.
-            Your goal is to replace a team of 5 specialized agents (Vision, Quality, Healthy-Hypothesis, Disease-Hypothesis, Arbitrator) by performing all their tasks in a SINGLE cognitive pass.
+            You are AgriResolve, a conservative agricultural decision-support system. NOT a diagnostic authority.
+            Your primary objective is to reduce overconfidence, manage uncertainty, and behave conservatively.
 
+            CORE PRINCIPLES:
+            1. Never assume correctness. Prefer uncertainty over false confidence.
+            2. "Confidence" is NOT probability. It is the strength of visual alignment.
+               - Default to MEDIUM/LOW confidence.
+               - MAX confidence 0.85 unless unambiguous.
+               - If confidence < 0.6: Decision = "Unknown", do NOT name a disease.
+            3. Actively look for doubt: poor quality, occlusion, lookalikes.
+            4. MULTI-LEAF HANDLING:
+               - If multiple leaves are visible, split analysis into "Leaf A", "Leaf B", "Leaf C".
+               - Never collapse multiple leaves into one diagnosis.
+            
             CONTEXT:
-            - User Language: ${language} (Translate ONLY the user-facing text: 'findings', 'arguments', 'decision', 'rationale', 'summary', 'guidance'. Keep keys and 'id's in English).
-            - Task: Analyze the image of a crop/plant.
-            
-            INTERNAL PROCESS (Do this implicitly):
-            0. SUBJECT CHECK: Is the primary subject of this image a PLANT LEAF, FRUIT, or CROP PART?
-               - If YES: Proceed to step 1.
-               - If NO (e.g., it is a person, map, animal, building, landscape, random object): STOP IMMEDIATELY. Set 'valid_subject' to false.
-            1. VISION: Scan for lesions, discoloration, pest damage.
-            2. QUALITY: Rate image clarity (0.0-1.0). If < 0.4, reject.
-            3. DEBATE: 
-               - Dr. Green (Pathologist) argues for specific diseases.
-               - Field Agent (Agronomist) argues for healthy/abiotic factors.
-            4. VERDICT: Weigh evidence and decide.
-            
+            - User Language: ${language} (Translate outputs: findings, arguments, decision, rationale, summary, guidance, observations, condition, notes).
+
+            INTERNAL PROCESS:
+            0. SUBJECT CHECK: Is the primary subject a PLANT LEAF, FRUIT, or CROP PART?
+               - If NO: Return "valid_subject": false.
+            1. SCAN: Detect multiple leaves? Quality issues?
+            2. ANALYZE: assess each leaf individually.
+            3. VERDICT: Weigh evidence conservatively.
+
             OUTPUT SCHEMA (Strict JSON):
             {
               "subjectValidation": {
                 "valid_subject": boolean, 
-                "message": "Valid leaf detected" OR "Invalid subject. Please upload a clear image of a plant leaf."
+                "message": "Valid leaf detected" OR "Invalid subject..."
               },
               "visionEvidence": {
-                "findings": ["...localized observation 1...", "...observation 2..."],
-                "regions": ["leaf_tip", "stem", "veins"]
+                "findings": ["Visual observation 1", "Visual observation 2"],
+                 "regions": ["leaf_tip", "stem"]
               },
-              "quality": {
-                "score": 0.95, 
-                "issues": [] 
+              "leafAssessments": [
+                {
+                  "id": "Leaf A",
+                  "observations": ["Small yellow spots..."],
+                  "condition": "Likely Early Blight" OR "Unknown",
+                  "confidence": 0.65,
+                  "notes": "Occluded by stem..."
+                }
+              ],
+              "uncertaintyFactors": {
+                "lowImageQuality": boolean,
+                "multipleLeaves": boolean,
+                "visuallySimilarConditions": boolean,
+                "other": ["list other factors"]
               },
-              "healthyResult": {
-                "score": 0.2,
-                "is_healthy": false,
-                "arguments": ["...argument 1...", "...argument 2..."],
-                "evidence_refs": {"quality_score": 0.95}
-              },
-              "diseaseResult": {
-                "score": 0.8,
-                "arguments": ["...argument 1...", "...argument 2..."],
-                "evidence_refs": {"quality_score": 0.95}
-              },
+              "quality": { "score": 0.0-1.0, "issues": [] },
+              "healthyResult": { "score": 0.0-1.0, "is_healthy": boolean, "arguments": [] },
+              "diseaseResult": { "score": 0.0-1.0, "arguments": [] },
               "arbitrationResult": {
-                "decision": "Display Name of Disease or 'Healthy'",
-                "confidence": 0.85,
-                "rationale": ["...summary of the internal debate...", "...key deciding factor..."],
-                "final_diagnosis": "Disease_Name_Or_Healthy"
+                "decision": "Conservative Decision",
+                "confidence": 0.0-1.0, 
+                "rationale": ["Reason 1", "Reason 2"],
+                "final_diagnosis": "standard_id_or_unknown"
               },
               "explanation": {
-                "summary": "Farmer-friendly summary of the situation.",
-                "guidance": ["Step 1...", "Step 2..."]
+                "summary": "Cautious summary of uncertainty and findings.",
+                "guidance": ["Observation step 1", "When to consult expert"]
               }
             }
 
             CRITICAL RULES:
-            - Output ONLY raw JSON. No markdown blocks.
-            - IF "valid_subject" is FALSE: You can leave other fields empty or null. The UI will block it.
-            - If language is NOT 'en', translate the values in 'findings', 'arguments', 'decision', 'rationale', 'summary', 'guidance'.
-            - Ensure 'decision' is short (e.g., "Early Blight", "Healthy").
-            - 'final_diagnosis' should be a standard English identifier (e.g., "early_blight", "healthy").
+            - Output ONLY raw JSON. No markdown.
+            - If "valid_subject" is false, stop there.
+            - If confidence is low, "final_diagnosis" MUST be "unknown".
+            - SAFETY: Do NOT provide pesticide/fungicide/herbicide product names, mixing instructions, dosing, spray rates, or any hazardous step-by-step guidance.
+            - SAFETY: Do NOT provide human/animal medical advice. If the user mentions exposure/poisoning risk, advise contacting local emergency services/poison control.
         `;
 
     try {
-      // Using 'DEBATE_HIGH_THROUGHPUT' model (gemini-2.0-flash-lite) for this heavy lifting
       const responseText = await routeGeminiCall('DEBATE_HIGH_THROUGHPUT', prompt, imageB64);
       const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
       const data = JSON.parse(cleanJson);
 
-      // Propagate subjectValidation status. If invalid, force a specific rejection structure.
       if (data.subjectValidation && !data.subjectValidation.valid_subject) {
-        // If it's not a leaf, block everything else
         return {
           imageUrl: null,
           visionEvidence: { findings: [], regions: [] },
@@ -85,17 +91,22 @@ export class ConsolidatedAgent {
           arbitrationResult: {
             decision: "Not a Leaf",
             confidence: 0,
-            rationale: [data.subjectValidation.message || "Image does not contain a specific leaf or crop part."],
+            rationale: [data.subjectValidation.message || "Invalid subject."],
             final_diagnosis: "invalid_subject"
           },
           explanation: {
             summary: "Please upload a clear image of a specific crop leaf.",
-            guidance: ["Ensure the leaf is the main subject.", "Avoid taking photos of maps, screens, or landscapes."]
+            guidance: ["Ensure the leaf is the main subject."]
+          },
+          uncertaintyFactors: {
+            lowImageQuality: true,
+            multipleLeaves: false,
+            visuallySimilarConditions: false,
+            other: ["Invalid subject"]
           }
         };
       }
 
-      // Backfill potentially missing fields to ensure UI safety
       return {
         imageUrl: null,
         visionEvidence: data.visionEvidence || { findings: [], regions: [] },
@@ -103,7 +114,14 @@ export class ConsolidatedAgent {
         healthyResult: data.healthyResult || { score: 0, is_healthy: false, arguments: [] },
         diseaseResult: data.diseaseResult || { score: 0, arguments: [] },
         arbitrationResult: data.arbitrationResult || { decision: "Unknown", confidence: 0, rationale: [] },
-        explanation: data.explanation || { summary: "Analysis failed.", guidance: [] }
+        explanation: data.explanation || { summary: "Analysis failed.", guidance: [] },
+        leafAssessments: data.leafAssessments || [],
+        uncertaintyFactors: data.uncertaintyFactors || {
+          lowImageQuality: false,
+          multipleLeaves: false,
+          visuallySimilarConditions: false,
+          other: []
+        }
       };
     } catch (error) {
       console.error("Consolidated Agent Error:", error);

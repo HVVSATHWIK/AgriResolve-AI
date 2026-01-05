@@ -23,7 +23,9 @@ export class ExplanationAgent extends Agent {
       
       IMPORTANT FORMATTING RULES:
       - You MUST Translate 'summary' and 'guidance' values to the target language.
-      - DO NOT prescribe chemicals. Suggest monitoring or expert consultation if needed.
+            - DO NOT prescribe chemicals. Do NOT include dosing, spray rates, mixing, or product recommendations.
+            - Do NOT give human/animal medical advice.
+            - Suggest monitoring, sanitation, and expert consultation if needed.
       - Preserve any markdown formatting (bold **, bullets) if used.
     `;
 

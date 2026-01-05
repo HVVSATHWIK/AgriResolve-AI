@@ -1,12 +1,52 @@
 import { GoogleGenAI } from "@google/genai";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+const API_KEY =
+    import.meta.env.VITE_GEMINI_API_KEY ||
+    (typeof process !== 'undefined' ? (process as any)?.env?.GEMINI_API_KEY : undefined);
 
 if (!API_KEY) {
     console.warn("Missing VITE_GEMINI_API_KEY in environment variables");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+const ai = new GoogleGenAI({ apiKey: API_KEY || "" });
+
+function toInlineImage(imageB64: string): { mimeType: string; data: string } {
+    const match = imageB64.match(/^data:(image\/[^;]+);base64,(.*)$/);
+    if (match) {
+        return { mimeType: match[1], data: match[2] };
+    }
+
+    return {
+        mimeType: 'image/jpeg',
+        data: imageB64.split(',')[1] || imageB64,
+    };
+}
+
+const SAFETY_SYSTEM_INSTRUCTION = `
+You are AgriResolve AI, a cautious agricultural decision-support assistant.
+
+Safety rules (highest priority):
+- Do NOT provide instructions for making, mixing, concentrating, or dosing chemicals (pesticides/fungicides/herbicides), nor application rates, nor any step-by-step hazardous procedure.
+- Do NOT give human/animal medical advice. If asked about poisoning/exposure, recommend contacting local emergency services/poison control and following the product label/SDS.
+- If a request is unsafe or illegal, refuse briefly and offer safer alternatives (monitoring, sanitation, scouting, consult agronomist, follow local guidelines).
+
+Output rules:
+- Follow the user-provided format requirements (e.g., JSON) and language requirements in the prompt.
+- Be conservative with certainty; call out uncertainty clearly.
+`;
+
+const DEFAULT_CONFIG: any = {
+    temperature: 0.2,
+    maxOutputTokens: 1400,
+    // Library/API versions differ; keep these as plain strings for compatibility.
+    safetySettings: [
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+        { category: 'HARM_CATEGORY_CIVIC_INTEGRITY', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+    ],
+};
 
 // Model Registry - Fallback to 2.5 Flash-Lite (Limit: 20/day) as 1.5/2.0 are unavailable/quota-0
 const MODEL_REGISTRY = {
@@ -29,10 +69,11 @@ export async function routeGeminiCall(
     const parts: any[] = [{ text: prompt }];
 
     if (imageB64) {
+        const inline = toInlineImage(imageB64);
         parts.push({
             inlineData: {
-                mimeType: 'image/jpeg',
-                data: imageB64.split(',')[1] || imageB64,
+                mimeType: inline.mimeType,
+                data: inline.data,
             },
         });
     }
@@ -40,11 +81,13 @@ export async function routeGeminiCall(
     let attempt = 0;
     const MAX_RETRIES = 3;
 
-    while (true) {
+    while (attempt <= MAX_RETRIES) {
         try {
             const response = await model({
                 model: modelName,
                 contents: [{ parts }],
+                systemInstruction: SAFETY_SYSTEM_INSTRUCTION,
+                config: DEFAULT_CONFIG,
             });
 
             return response.text || "";
@@ -79,4 +122,7 @@ export async function routeGeminiCall(
             throw error;
         }
     }
+
+    // Defensive fallback (should be unreachable)
+    return "";
 }

@@ -3,7 +3,6 @@ import { routeGeminiCall } from '../../services/gemini';
 import { QualityReport } from './QualityEvaluator';
 
 export enum DecisionState {
-    HEALTHY = "Likely Healthy",
     LIKELY_HEALTHY = "Likely Healthy",
     POSSIBLE_ABNORMALITY = "Possibly Abnormal",
     LIKELY_ABNORMALITY = "Likely Abnormal",

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AssessmentData } from '../../../types';
 import { routeGeminiCall } from '../../../services/gemini';
+import { checkUserSafety } from '../../../lib/safety';
 
 export interface ChatMessage {
     id: string;
@@ -44,27 +45,62 @@ export const useAIChat = (contextData: AssessmentData | null) => {
         setIsLoading(true);
 
         try {
+            const safety = checkUserSafety(text);
+            if (safety.blocked) {
+                const aiMsg: ChatMessage = {
+                    id: crypto.randomUUID(),
+                    sender: 'ai',
+                    text: t('safety_refusal', {
+                        defaultValue:
+                            "I can’t help with chemical dosing/mixing or other potentially dangerous instructions. For safety, follow the product label/SDS and consult a qualified agronomist or local extension officer. If there was any exposure or poisoning risk, contact local emergency services/poison control immediately.",
+                    }),
+                    timestamp: Date.now(),
+                };
+
+                setMessages(prev => [...prev, aiMsg]);
+                return;
+            }
+
             // Construct Context-Aware Prompt
             let systemContext = `
-        You are an expert Agricultural Field Assistant.
-        Your goal is to help farmers and agronomists understand crop health issues.
+        You are AgriResolve, a conservative Agricultural Field Assistant.
+        Your goal is to help farmers and agronomists understand crop health issues based on the provided analysis.
         
         IMPORTANT: The user is speaking in language code: "${i18n.language}".
         You MUST answer in this language.
         
-        Be concise, practical, and helpful. 
-        If a diagnosis is provided below, use it to answer questions specifically about THAT problem.
+        PRINCIPLES:
+        - Be helpful but conservative.
+        - Do not invent certainty where there is none.
+        - Use the specific leaf assessments provided below.
       `;
 
             if (contextData && contextData.arbitrationResult) {
+                // Formatting Leaf Assessments for the prompt
+                const leafCtx = contextData.leafAssessments
+                    ? contextData.leafAssessments.map(l => `- ${l.id}: ${l.condition} (${(l.confidence * 100).toFixed(0)}% conf). Notes: ${l.notes}`).join('\n')
+                    : "No individual leaf data.";
+
+                // Formatting Uncertainty Factors
+                const uncCtx = contextData.uncertaintyFactors
+                    ? `Quality Issues: ${contextData.uncertaintyFactors.lowImageQuality ? 'YES' : 'No'}. Multiple Leaves: ${contextData.uncertaintyFactors.multipleLeaves ? 'YES' : 'No'}. Ambiguous: ${contextData.uncertaintyFactors.visuallySimilarConditions ? 'YES' : 'No'}.`
+                    : "Uncertainty data not available.";
+
                 systemContext += `
           \n--- CURRENT DIAGNOSIS ---
-          Problem: ${contextData.arbitrationResult.final_diagnosis || contextData.arbitrationResult.decision || "Unknown"}
-          Confidence: ${((contextData.arbitrationResult.confidence || contextData.arbitrationResult.confidence_score || 0) * 100).toFixed(0)}%
+          Overall Decision: ${contextData.arbitrationResult.final_diagnosis || contextData.arbitrationResult.decision || "Unknown"}
           Explanation: ${contextData.explanation.summary}
-          Recommended Actions: ${contextData.explanation.guidance.join(', ')}
-          Healthy Probability: ${(contextData.healthyResult.score * 100).toFixed(0)}%
-          Disease Probability: ${(contextData.diseaseResult.score * 100).toFixed(0)}%
+          
+          --- DETAILED ANALYSIS ---
+          Visual Findings: ${contextData.visionEvidence?.findings?.join(', ') || "None"}
+          
+          --- LEAF ASSESSMENTS ---
+          ${leafCtx}
+          
+          --- UNCERTAINTY FACTORS ---
+          ${uncCtx}
+          
+          Recommended Actions: ${contextData.explanation.guidance?.join(', ') || "None"}
           \n--- END DIAGNOSIS ---
           
           The user is asking a question about this specific case.

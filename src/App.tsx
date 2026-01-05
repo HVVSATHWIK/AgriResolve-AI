@@ -82,6 +82,19 @@ const App: React.FC = () => {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      const MAX_IMAGE_BYTES = 6 * 1024 * 1024; // 6MB
+      if (file.size > MAX_IMAGE_BYTES) {
+        setError(
+          t('file_too_large', {
+            defaultValue: 'Image file is too large. Please upload a smaller, clearer photo (max ~6MB).',
+          })
+        );
+        setStatus(AssessmentStatus.ERROR);
+        // Clear the input so selecting the same file again triggers onChange
+        event.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -118,7 +131,7 @@ const App: React.FC = () => {
         imageBlob: file,
         diagnosis: {
           primaryIssue: result.arbitrationResult.decision, // Correct property name
-          confidence: result.arbitrationResult.confidence_score,
+          confidence: result.arbitrationResult.confidence ?? result.arbitrationResult.confidence_score ?? 0,
           description: result.explanation.summary,
           recommendedActions: result.explanation.guidance[0] || "Consult an agronomist."
         },
@@ -314,15 +327,17 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <HypothesisDebate
-              healthy={data?.healthyResult!}
-              disease={data?.diseaseResult!}
-              isVisible={[AssessmentStatus.DEBATING, AssessmentStatus.ARBITRATING, AssessmentStatus.EXPLAINING, AssessmentStatus.COMPLETED].includes(status)}
-            />
+            {data && (
+              <HypothesisDebate
+                healthy={data.healthyResult}
+                disease={data.diseaseResult}
+                isVisible={[AssessmentStatus.DEBATING, AssessmentStatus.ARBITRATING, AssessmentStatus.EXPLAINING, AssessmentStatus.COMPLETED].includes(status)}
+              />
+            )}
 
             {status === AssessmentStatus.COMPLETED && data && (
               <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-sm border border-gray-200 p-6">
-                <FinalResults data={data} />
+                <FinalResults data={data} sourceImage={image} />
               </div>
             )}
           </div>

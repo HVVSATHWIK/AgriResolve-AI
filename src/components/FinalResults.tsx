@@ -1,15 +1,52 @@
-
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { AssessmentData } from '../types';
 import { useTranslation } from 'react-i18next';
+import { AlertCircle, HelpCircle, Scan, Leaf, FileText } from 'lucide-react';
+import { computeLeafCrops, LeafCrop } from '../lib/leafCrops';
 
 interface FinalResultsProps {
   data: AssessmentData;
+  sourceImage?: string | null;
 }
 
-export const FinalResults: React.FC<FinalResultsProps> = ({ data }) => {
+export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage }) => {
   const { t } = useTranslation();
+
+  const [leafCrops, setLeafCrops] = useState<LeafCrop[]>([]);
+
+  const leafCount = useMemo(() => {
+    const n = data.leafAssessments?.length || 0;
+    return Math.min(3, Math.max(0, n));
+  }, [data.leafAssessments?.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!sourceImage || !leafCount) {
+        setLeafCrops([]);
+        return;
+      }
+
+      try {
+        const crops = await computeLeafCrops(sourceImage, leafCount);
+        if (!cancelled) setLeafCrops(crops);
+      } catch {
+        if (!cancelled) setLeafCrops([]);
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceImage, leafCount]);
+
+  const formatConfidence = (value?: number) => {
+    const num = typeof value === 'number' ? value : 0;
+    const clamped = Math.max(0, Math.min(1, num));
+    return `${Math.round(clamped * 100)}%`;
+  };
 
   const getVerdictStyles = (verdict: string) => {
     switch (verdict) {
@@ -23,15 +60,120 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data }) => {
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom duration-700">
+
+      {/* 1. Image Overview & Quality */}
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-8">
+        <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+          <Scan className="w-6 h-6 text-blue-600" />
+          Image Overview
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100">
+            <h4 className="text-xs font-bold text-blue-800 uppercase tracking-widest mb-3">Vision Findings</h4>
+            <ul className="space-y-2">
+              {data.visionEvidence?.findings?.map((finding: string, i: number) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
+                  {finding}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-gray-50/50 rounded-xl p-5 border border-gray-100">
+            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Uncertainty Factors</h4>
+            {data.uncertaintyFactors && Object.entries(data.uncertaintyFactors).some(([k, v]) => v === true || (Array.isArray(v) && v.length > 0)) ? (
+              <ul className="space-y-2">
+                {data.uncertaintyFactors.lowImageQuality && (
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><AlertCircle className="w-4 h-4" /> Low Image Quality</li>
+                )}
+                {data.uncertaintyFactors.multipleLeaves && (
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><Leaf className="w-4 h-4" /> Multiple Leaves Detected</li>
+                )}
+                {data.uncertaintyFactors.visuallySimilarConditions && (
+                  <li className="flex items-center gap-2 text-sm text-amber-700"><HelpCircle className="w-4 h-4" /> Ambiguous Symptoms</li>
+                )}
+                {data.uncertaintyFactors.other?.map((factor: string, i: number) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-gray-600">• {factor}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No major uncertainty factors detected.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Leaf Assessments */}
+      <div className="space-y-4">
+        {data.leafAssessments && data.leafAssessments.length > 0 ? (
+          data.leafAssessments.map((leaf, index) => (
+            <div key={index} className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-700 font-bold border border-green-100">
+                    {leaf.id.split(' ')[1] || 'A'}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900">{leaf.id}</h3>
+                    <p className="text-xs text-gray-500">{leaf.condition === 'Unknown' ? 'Condition Unclear' : leaf.condition}</p>
+                  </div>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${leaf.confidence > 0.8 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                  {formatConfidence(leaf.confidence)} Conf
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-4">
+                  <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                    <img
+                      src={leafCrops[index]?.dataUrl || sourceImage || ''}
+                      alt={`${leaf.id} thumbnail`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <p className="mt-2 text-[11px] text-gray-400 font-medium">
+                    {t('leaf_thumbnail_note', { defaultValue: 'Auto-cropped view (best effort).' })}
+                  </p>
+                </div>
+
+                <div className="md:col-span-8 space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Observations</p>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {leaf.observations.map((obs, i) => <li key={i}>• {obs}</li>)}
+                  </ul>
+                </div>
+                {leaf.notes && (
+                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 text-xs text-yellow-800">
+                    <strong>Note:</strong> {leaf.notes}
+                  </div>
+                )}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          /* Fallback for single leaf / legacy format */
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm text-center text-gray-500">
+            Single Subject Assessed. See Final Decision.
+          </div>
+        )}
+      </div>
+
+
+      {/* 3. Final Decision & Guidance (Existing Block) */}
+      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-8 hidden md:block">
           <div className={`px-4 py-2 rounded-full border font-bold text-sm uppercase tracking-widest ${getVerdictStyles(data.arbitrationResult?.decision || 'Indeterminate')}`}>
             {data.arbitrationResult?.decision}
           </div>
         </div>
 
         <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-          <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04m12.892 3.381A3.333 3.333 0 0112 15c-1.842 0-3.333-1.491-3.333-3.333m0 0c0-1.842 1.491-3.333 3.333-3.333m0 0c1.842 0 3.333 1.491 3.333 3.333M9 15c0 1.842 1.491 3.333 3.333 3.333m0 0c1.842 0 3.333-1.491 3.333-3.333" /></svg>
+          <FileText className="w-7 h-7 text-green-600" />
           {t('verdict_title')}
         </h2>
 
@@ -39,54 +181,25 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data }) => {
           <ReactMarkdown>
             {data.explanation?.summary}
           </ReactMarkdown>
-          <div className="text-xs text-gray-400 mt-2">
-            {t('agent_explanation_title')}
-          </div>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-gray-100 pt-8">
-          <div>
-            <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">{t('farmer_guidance')}</h4>
-            <ul className="space-y-3">
-              {data.explanation?.guidance?.map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-gray-700">
-                  <svg className="w-5 h-5 text-green-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
-                  <span className="text-sm">
-                    <ReactMarkdown components={{
-                      p: ({ children }) => <span className="inline">{children}</span>,
-                      strong: ({ children }) => <span className="font-bold text-gray-900">{children}</span>
-                    }}>
-                      {item}
-                    </ReactMarkdown>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">{t('quality_summary')}</h4>
-            <div className="bg-gray-50 rounded-2xl p-4 flex flex-col gap-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">{t('image_reliability')}</span>
-                <span className={`text-xs font-bold ${data.quality?.score > 0.7 ? 'text-green-600' : 'text-yellow-600'}`}>
-                  {(data.quality?.score * 100).toFixed(0)}%
+        <div className="mt-8 border-t border-gray-100 pt-8">
+          <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">{t('farmer_guidance')}</h4>
+          <ul className="space-y-3">
+            {data.explanation?.guidance?.map((item, i) => (
+              <li key={i} className="flex items-start gap-3 text-gray-700">
+                <svg className="w-5 h-5 text-green-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                <span className="text-sm">
+                  <ReactMarkdown components={{
+                    p: ({ children }) => <span className="inline">{children}</span>,
+                    strong: ({ children }) => <span className="font-bold text-gray-900">{children}</span>
+                  }}>
+                    {item}
+                  </ReactMarkdown>
                 </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                <div
-                  className={`h-full transition-all duration-1000 ${data.quality?.score > 0.7 ? 'bg-green-500' : 'bg-yellow-500'}`}
-                  style={{ width: `${data.quality?.score * 100}%` }}
-                ></div>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {data.quality?.flags?.map((flag: string, i: number) => (
-                  <span key={i} className="px-2 py-1 bg-white border border-gray-200 text-[10px] rounded-md font-medium text-gray-600">
-                    {flag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
