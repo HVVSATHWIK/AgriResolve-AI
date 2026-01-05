@@ -35,8 +35,6 @@ export async function runAgenticPipeline(
         onStatusUpdate(AssessmentStatus.EXPLAINING);
         await new Promise(r => setTimeout(r, 5000));
 
-        onStatusUpdate(AssessmentStatus.COMPLETED);
-
         return result;
 
     } catch (error) {

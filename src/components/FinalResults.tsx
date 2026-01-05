@@ -58,6 +58,21 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
     }
   };
 
+  const verdictLabel = useMemo(() => {
+    const verdict = data.arbitrationResult?.decision;
+    if (!verdict) return '';
+    if (verdict === 'Conservative Decision') {
+      return t('conservative_decision', { defaultValue: verdict });
+    }
+    if (verdict === 'Not a Leaf') {
+      return t('not_a_leaf', { defaultValue: verdict });
+    }
+    if (verdict === 'Unknown') {
+      return t('unknown_issue', { defaultValue: verdict });
+    }
+    return verdict;
+  }, [data.arbitrationResult?.decision, t]);
+
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom duration-700">
 
@@ -168,7 +183,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage })
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl overflow-hidden relative">
         <div className="absolute top-0 right-0 p-8 hidden md:block">
           <div className={`px-4 py-2 rounded-full border font-bold text-sm uppercase tracking-widest ${getVerdictStyles(data.arbitrationResult?.decision || 'Indeterminate')}`}>
-            {data.arbitrationResult?.decision}
+            {verdictLabel || data.arbitrationResult?.decision}
           </div>
         </div>
 

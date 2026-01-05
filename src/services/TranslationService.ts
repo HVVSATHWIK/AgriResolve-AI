@@ -19,25 +19,40 @@ export async function translateAssessmentData(
 
     const prompt = `
     You are a precise JSON Translator for an Agricultural AI App.
-    
+
     Target Language: "${targetLanguage}"
 
-    Your task is to translate the user-facing text content within the provided JSON.
+    Your task is to translate ALL user-facing text content within the provided JSON.
 
     RULES:
-    1. Translate "summary", "guidance", "arguments", "rationale", and "label" values to ${targetLanguage}.
-    2. DO NOT translate keys.
-    3. DO NOT translate the "decision" value (e.g. "Likely Healthy", "Indeterminate") - this MUST remain in English for system logic.
-    4. DO NOT translate "status" or "score" values.
-    5. Return ONLY the valid JSON, no markdown formatting like \`\`\`json.
+    1. Translate text values inside:
+       - explanation.summary, explanation.guidance
+       - healthyResult.arguments, diseaseResult.arguments
+       - arbitrationResult.rationale
+       - subjectValidation.message
+       - visionEvidence.findings (but NOT visionEvidence.regions)
+       - uncertaintyFactors.other
+       - leafAssessments[].observations, leafAssessments[].notes, leafAssessments[].condition
+       - quality.issues
+    2. DO NOT translate JSON keys.
+    3. DO NOT translate arbitrationResult.decision (must remain English).
+    4. DO NOT translate arbitrationResult.final_diagnosis.
+    5. DO NOT translate leafAssessments[].id (e.g. "Leaf A").
+    6. If leafAssessments[].condition is exactly "Unknown", keep it as "Unknown".
+    7. Keep all numbers/booleans unchanged.
+    8. Return ONLY valid JSON (no markdown, no extra text).
 
     INPUT JSON:
     ${JSON.stringify({
+        subjectValidation: (data as any).subjectValidation,
+        visionEvidence: data.visionEvidence,
+        leafAssessments: data.leafAssessments,
+        uncertaintyFactors: data.uncertaintyFactors,
+        quality: data.quality,
         explanation: data.explanation,
         healthyResult: data.healthyResult,
         diseaseResult: data.diseaseResult,
         arbitrationResult: data.arbitrationResult,
-        // We do not translate visionEvidence or Quality here as they are mostly technical/numeric
     })}
     `;
 
@@ -51,11 +66,16 @@ export async function translateAssessmentData(
         // Merge back into original object
         return {
             ...data,
-            explanation: translatedParts.explanation,
-            healthyResult: translatedParts.healthyResult,
-            diseaseResult: translatedParts.diseaseResult,
-            arbitrationResult: translatedParts.arbitrationResult
-        };
+            subjectValidation: translatedParts.subjectValidation ?? (data as any).subjectValidation,
+            visionEvidence: translatedParts.visionEvidence ?? data.visionEvidence,
+            leafAssessments: translatedParts.leafAssessments ?? data.leafAssessments,
+            uncertaintyFactors: translatedParts.uncertaintyFactors ?? data.uncertaintyFactors,
+            quality: translatedParts.quality ?? data.quality,
+            explanation: translatedParts.explanation ?? data.explanation,
+            healthyResult: translatedParts.healthyResult ?? data.healthyResult,
+            diseaseResult: translatedParts.diseaseResult ?? data.diseaseResult,
+            arbitrationResult: translatedParts.arbitrationResult ?? data.arbitrationResult
+        } as AssessmentData;
 
     } catch (error) {
         console.error("Translation Failed:", error);

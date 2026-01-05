@@ -113,16 +113,23 @@ const App: React.FC = () => {
     setAssessmentCache({}); // Reset cache for new image
 
     try {
-      // Pass current language to the pipeline
-      const result = await runAgenticPipeline(img, (newStatus) => {
+      // Always generate a stable English base result, then translate for the UI language.
+      const base = await runAgenticPipeline(img, (newStatus) => {
         setStatus(newStatus);
-      }, i18n.language);
+      }, 'en');
 
-      setData(result);
-      setBaseData(result); // Store as base for future translations
+      setBaseData(base);
+
+      const currentLang = i18n.language;
+      const view = currentLang === 'en' ? base : await translateAssessmentData(base, currentLang);
+
+      setData(view);
 
       // Cache the initial result for the current language
-      setAssessmentCache({ [i18n.language]: result });
+      setAssessmentCache({ [currentLang]: view });
+
+      // Mark completed after translation is ready
+      setStatus(AssessmentStatus.COMPLETED);
 
       // Save to History
       const record = {
@@ -130,12 +137,12 @@ const App: React.FC = () => {
         timestamp: Date.now(),
         imageBlob: file,
         diagnosis: {
-          primaryIssue: result.arbitrationResult.decision, // Correct property name
-          confidence: result.arbitrationResult.confidence ?? result.arbitrationResult.confidence_score ?? 0,
-          description: result.explanation.summary,
-          recommendedActions: result.explanation.guidance[0] || "Consult an agronomist."
+          primaryIssue: view.arbitrationResult.decision, // Correct property name
+          confidence: view.arbitrationResult.confidence ?? view.arbitrationResult.confidence_score ?? 0,
+          description: view.explanation.summary,
+          recommendedActions: view.explanation.guidance[0] || "Consult an agronomist."
         },
-        healthStatus: result.healthyResult.is_healthy ? 'healthy' : 'critical',
+        healthStatus: view.healthyResult.is_healthy ? 'healthy' : 'critical',
         agentLogs: []
       };
       addRecord(record as any);
@@ -294,7 +301,7 @@ const App: React.FC = () => {
               <div className="lg:col-span-5">
                 <div className="sticky top-8 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-gray-200">
                   <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                    <img src={image!} alt="Uploaded leaf" className="w-full h-full object-cover" />
+                    <img src={image!} alt={t('source_image')} className="w-full h-full object-cover" />
 
                     {/* Scan Animation Overlay */}
                     <ScanOverlay isActive={status === AssessmentStatus.PERCEIVING || status === AssessmentStatus.EVALUATING} />
@@ -302,16 +309,16 @@ const App: React.FC = () => {
                     {status === AssessmentStatus.PERCEIVING && (
                       <div className="absolute top-4 left-4 right-4 bg-black/75 text-white text-xs py-2 px-3 rounded-md shadow-lg backdrop-blur-sm flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                        Processing Image Data...
+                        {t('processing')}
                       </div>
                     )}
                   </div>
 
                   <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Source Image</span>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t('source_image')}</span>
                     {status === AssessmentStatus.COMPLETED && (
                       <button onClick={reset} className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline">
-                        Start New Analysis
+                        {t('new_analysis')}
                       </button>
                     )}
                   </div>
@@ -321,7 +328,7 @@ const App: React.FC = () => {
               {/* Workflow Progress */}
               <div className="lg:col-span-7">
                 <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b border-gray-100 pb-2">Analysis Pipeline</h3>
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4 border-b border-gray-100 pb-2">{t('pipeline_title')}</h3>
                   <AgentVisualizer status={status} />
                 </div>
               </div>
