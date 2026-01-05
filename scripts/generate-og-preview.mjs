@@ -62,10 +62,12 @@ async function main() {
     <rect x="62" y="62" width="1076" height="506" rx="30" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="2" />
   </g>
 
-  <!-- Logo Section (White glow behind logo to make it pop) -->
+  <!-- Logo Section (Stronger backing for visibility) -->
   <g transform="translate(100, 165)">
-    <circle cx="150" cy="150" r="130" fill="rgba(255,255,255,0.08)" />
-    <circle cx="150" cy="150" r="100" fill="rgba(255,255,255,0.05)" filter="blur(20px)" />
+    <!-- Soft outer glow -->
+    <circle cx="150" cy="150" r="140" fill="#ffffff" opacity="0.1" filter="blur(30px)" />
+    <!-- Brighter backing circle to contrast with dark green logo elements -->
+    <circle cx="150" cy="150" r="130" fill="#ffffff" opacity="0.2" />
     <image href="data:image/svg+xml;base64,${logoB64}" x="20" y="20" width="260" height="260" />
   </g>
 
