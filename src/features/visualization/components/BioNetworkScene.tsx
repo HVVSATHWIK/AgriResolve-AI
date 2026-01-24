@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as random from 'maath/random/dist/maath-random.esm';
 import * as THREE from 'three';
+import { FallingLeavesGPGPU } from './FallingLeavesGPGPU';
 
 const Particles = (props: Record<string, unknown>) => {
     const ref = useRef<THREE.Points>(null);
@@ -61,13 +62,16 @@ const Connections = () => {
     );
 }
 
-
 export const BioNetworkScene: React.FC = () => {
     return (
         <div className="fixed inset-0 w-full h-full -z-10 bg-gradient-to-br from-green-50/50 to-white/80 pointer-events-none">
-            <Canvas camera={{ position: [0, 0, 1] }}>
+            <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+                {/* Existing Particles */}
                 <Particles />
                 <Connections />
+
+                {/* High-Fidelity GPGPU Leaves */}
+                <FallingLeavesGPGPU />
             </Canvas>
         </div>
     );

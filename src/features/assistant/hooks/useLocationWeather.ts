@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchCurrentWeather, type CurrentWeather } from '../../../services/weather';
+import { fetchCurrentWeather, fetchLocationName, type CurrentWeather, type LocationName } from '../../../services/weather';
 
 export type LocationConsent = 'unknown' | 'granted' | 'denied';
 
 type StoredCoords = { latitude: number; longitude: number; accuracy?: number; timestamp: number };
 
-type StoredWeather = { weather: CurrentWeather; coords: { latitude: number; longitude: number }; fetchedAt: number };
+type StoredWeather = {
+  weather: CurrentWeather;
+  locationName?: LocationName;
+  coords: { latitude: number; longitude: number };
+  fetchedAt: number
+};
 
 // Bump keys to avoid getting stuck in a previous persisted "denied" state from older builds.
-const LS_CONSENT = 'agriresolve_location_consent_v2';
-const LS_COORDS = 'agriresolve_location_coords_v2';
-const LS_WEATHER = 'agriresolve_weather_cache_v2';
+const LS_CONSENT = 'agriresolve_location_consent_v3';
+const LS_COORDS = 'agriresolve_location_coords_v3';
+const LS_WEATHER = 'agriresolve_weather_cache_v3';
 
 const safeParse = <T,>(raw: string | null): T | null => {
   if (!raw) return null;
@@ -40,6 +45,11 @@ export const useLocationWeather = () => {
     return stored?.weather ?? null;
   });
 
+  const [locationName, setLocationName] = useState<LocationName | undefined>(() => {
+    const stored = typeof window !== 'undefined' ? safeParse<StoredWeather>(window.localStorage.getItem(LS_WEATHER)) : null;
+    return stored?.locationName;
+  });
+
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState<number | null>(() => {
     const stored = typeof window !== 'undefined' ? safeParse<StoredWeather>(window.localStorage.getItem(LS_WEATHER)) : null;
     return stored?.fetchedAt ?? null;
@@ -65,6 +75,7 @@ export const useLocationWeather = () => {
 
   const persistWeather = useCallback((next: StoredWeather) => {
     setWeather(next.weather);
+    setLocationName(next.locationName);
     setWeatherUpdatedAt(next.fetchedAt);
     try {
       window.localStorage.setItem(LS_WEATHER, JSON.stringify(next));
@@ -126,20 +137,27 @@ export const useLocationWeather = () => {
 
     if (cached?.fetchedAt && now - cached.fetchedAt < CACHE_MS) {
       setWeather(cached.weather);
+      setLocationName(cached.locationName);
       setWeatherUpdatedAt(cached.fetchedAt);
       return cached.weather;
     }
 
-    const latest = await fetchCurrentWeather(coords.latitude, coords.longitude);
-    if (!latest) return null;
+    // Parallel fetch for speed
+    const [latestWeather, latestLocation] = await Promise.all([
+      fetchCurrentWeather(coords.latitude, coords.longitude),
+      fetchLocationName(coords.latitude, coords.longitude)
+    ]);
+
+    if (!latestWeather) return null;
 
     persistWeather({
-      weather: latest,
+      weather: latestWeather,
+      locationName: latestLocation || undefined,
       coords: { latitude: coords.latitude, longitude: coords.longitude },
       fetchedAt: now,
     });
 
-    return latest;
+    return latestWeather;
   }, [consent, coords, persistWeather]);
 
   // On first load: if already granted, ensure we have weather.
@@ -153,7 +171,13 @@ export const useLocationWeather = () => {
     if (consent !== 'granted' || !coords) return null;
 
     const parts: string[] = [];
-    parts.push(`Approximate coordinates: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}.`);
+
+    // Add explicitly named location if available
+    if (locationName?.displayName) {
+      parts.push(`Detailed Location: ${locationName.displayName}.`);
+    } else {
+      parts.push(`Approximate coordinates: ${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}.`);
+    }
 
     if (weather) {
       const temp = typeof weather.temperatureC === 'number' ? `${weather.temperatureC.toFixed(1)}°C` : null;
@@ -184,13 +208,14 @@ export const useLocationWeather = () => {
     }
 
     return parts.join(' ');
-  }, [consent, coords, weather, weatherUpdatedAt]);
+  }, [consent, coords, weather, locationName, weatherUpdatedAt]);
 
   return {
     consent,
     hasGeolocation,
     coords,
     weather,
+    locationName,
     weatherUpdatedAt,
     requestPermission,
     disable,

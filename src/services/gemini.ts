@@ -1,11 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 
-const API_KEY =
-    import.meta.env.GEMINI_API_TOKEN ||
-    (typeof process !== 'undefined' ? process.env?.GEMINI_API_TOKEN : undefined);
+const rawKey = import.meta.env.VITE_GEMINI_API_TOKEN ||
+    (typeof process !== 'undefined' ? process.env?.VITE_GEMINI_API_TOKEN : undefined);
+
+const API_KEY = rawKey ? rawKey.replace(/\s/g, '').trim() : "";
 
 if (!API_KEY) {
-    console.warn("Missing GEMINI_API_TOKEN in environment variables");
+    console.warn("Missing VITE_GEMINI_API_TOKEN in environment variables");
 }
 
 const ai = new GoogleGenAI({ apiKey: API_KEY || "" });
@@ -55,6 +56,7 @@ const MODEL_REGISTRY = {
     ARBITRATION_SMART: "gemini-2.5-flash-lite",
     EXPLANATION_POLISHED: "gemini-2.5-flash-lite",
     CHAT_INTERACTIVE: "gemini-2.5-flash-lite",
+    GENERATE_JSON: "gemini-2.5-flash-lite",
 };
 
 export async function routeGeminiCall(
@@ -93,7 +95,14 @@ export async function routeGeminiCall(
                 } as any,
             });
 
-            return response.text || "";
+            const text = response.text || "";
+
+            // For JSON tasks, strip markdown code blocks if present
+            if (taskType === 'GENERATE_JSON') {
+                return text.replace(/```json\n?|\n?```/g, '').trim();
+            }
+
+            return text;
         } catch (error: unknown) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const err = error as any;

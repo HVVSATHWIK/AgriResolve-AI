@@ -73,9 +73,8 @@ export const useAIChat = (contextData: AssessmentData | null, locationContext?: 
         1. You MUST use it to tailor seasonality, irrigation timing, disease risk factors, and monitoring guidance.
         2. If the user asks about growing a specific plant, you MUST evaluate if it is suitable for the current local weather and season.
            - If the plant is NOT suitable (e.g., wrong season, temperature too extreme), explicitly WARN the user.
-           - If the plant is invasive or unsafe for the region, provide a safety warning.
-        3. Do NOT claim exact locality names if only coordinates are provided.
-        4. Explicitly acknowledge in the FIRST sentence that you considered local weather/season conditions (without naming a specific town/village).
+        3. If the user asks "Where am I?", you SHOULD confirm the location provided in the context (City/Region).
+        4. Explicitly acknowledge in the FIRST sentence that you considered local weather/season conditions for that specific location.
         
         PRINCIPLES:
         - Be helpful but conservative.

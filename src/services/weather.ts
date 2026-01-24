@@ -42,3 +42,58 @@ export async function fetchCurrentWeather(latitude: number, longitude: number): 
     timezone: typeof json.timezone === 'string' ? json.timezone : undefined,
   };
 }
+
+export type LocationName = {
+  city?: string;
+  town?: string;
+  village?: string;
+  state?: string;
+  country?: string;
+  displayName: string;
+};
+
+export async function fetchLocationName(latitude: number, longitude: number): Promise<LocationName | null> {
+  try {
+    console.log('[Geo] Fetching name for:', latitude, longitude);
+    const url = new URL('https://nominatim.openstreetmap.org/reverse');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('lat', String(latitude));
+    url.searchParams.set('lon', String(longitude));
+    url.searchParams.set('zoom', '10'); // City/Town level
+    url.searchParams.set('addressdetails', '1');
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'AgriResolve-AI/1.0',
+        'Accept-Language': 'en'
+      },
+    });
+
+    if (!response.ok) return null;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data: any = await response.json();
+    const addr = data.address || {};
+
+    // Prioritize specific to general
+    const city = addr.city || addr.town || addr.village || addr.suburb || addr.county;
+    const state = addr.state || addr.region;
+    const country = addr.country;
+
+    const parts = [city, state, country].filter(Boolean);
+    const displayName = parts.length > 0 ? parts.join(', ') : 'Unknown Location';
+
+    return {
+      city: addr.city,
+      town: addr.town,
+      village: addr.village,
+      state: addr.state,
+      country: addr.country,
+      displayName
+    };
+  } catch (err) {
+    console.warn("Failed to reverse geocode:", err);
+    return null;
+  }
+}
