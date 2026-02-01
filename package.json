@@ -19,6 +19,8 @@
     "test:watch": "jest --config jest.config.cjs --watch",
     "test:pbt": "jest --config jest.config.cjs --testNamePattern='Property:'",
     "coverage": "jest --config jest.config.cjs --coverage"
+    ,
+    "test:css": "stylelint \"src/**/*.css\""
   },
   "dependencies": {
     "@google/genai": "^1.34.0",
@@ -86,6 +88,8 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "stylelint": "^16.14.1",
+    "stylelint-config-standard": "^37.0.0"
   }
 }

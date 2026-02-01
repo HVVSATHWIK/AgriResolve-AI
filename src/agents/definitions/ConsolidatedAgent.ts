@@ -38,7 +38,14 @@ function asString(value: unknown, fallback: string): string {
 }
 
 function asNumber(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
 }
 
 function asStringArray(value: unknown, fallback: string[] = []): string[] {

@@ -113,9 +113,10 @@ void main() {
   vec3 drift = vec3(sin(uTime * 0.22 + id * 6.283) * 0.14, 0.0, cos(uTime * 0.18 + id * 6.283) * 0.10);
   vec3 wind = (curl + drift) * 0.75;
 
-  // Global gentle flow
-  vec3 flowDir = normalize(vec3(1.0, 0.0, 0.35));
-  vec3 flow = flowDir * (uSpeed * 0.25);
+  // Global gentle sideways flow (visible breeze)
+  float gust = 0.70 + 0.30 * sin(uTime * 0.15);
+  vec3 flowDir = normalize(vec3(1.0, 0.0, 0.0));
+  vec3 flow = flowDir * (uSpeed * 0.38) * gust;
     
     // Target velocity: Gravity + Wind
   vec3 targetVel = gravity * uSpeed + wind * (uSpeed * 0.45) + flow;

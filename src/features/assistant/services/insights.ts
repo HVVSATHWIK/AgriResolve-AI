@@ -26,9 +26,10 @@ const FALLBACK_CALENDAR: CropCalendarEvent[] = [
 // In-memory map to deduplicate duplicate requests (e.g. React Strict Mode)
 const activeRequests: Record<string, Promise<CropCalendarEvent[]> | undefined> = {};
 
-export const fetchCropCalendar = async (location: string): Promise<CropCalendarEvent[]> => {
-    const month = new Date().toLocaleString('default', { month: 'long' });
-    const cacheKey = `agri_calendar_${location}_${month}`;
+export const fetchCropCalendar = async (location: string, language?: string): Promise<CropCalendarEvent[]> => {
+    const lang = (language || 'en').toLowerCase();
+    const month = new Date().toLocaleString(language || undefined, { month: 'long' });
+    const cacheKey = `agri_calendar_${location}_${month}_${lang}`;
 
     // 1. Try Local Cache First
     try {
@@ -49,6 +50,8 @@ export const fetchCropCalendar = async (location: string): Promise<CropCalendarE
         const prompt = `
             You are an agricultural expert for ${location}.
             Current Month: ${month}.
+            User language: ${lang}.
+            IMPORTANT: Return crop, stage, timing, notes in the user's language. If the user language is not English, translate everything.
             
             Generate a JSON array of 3-5 key crops suitable for this specific region and season.
             If the specific village/town is unknown, provide data for the State or Region (e.g., Andhra Pradesh/Telangana context).

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Eye, ShieldCheck, Scale, FileText } from 'lucide-react';
+import { Leaf, Eye, ShieldCheck, Scale, FileText } from 'lucide-react';
 import { AssessmentStatus } from '../../../types';
 import { cn } from '../../../lib/utils';
 
@@ -26,7 +26,7 @@ const AGENTS = [
     {
         id: AssessmentStatus.DEBATING,
         label: "Hypothesis Debate",
-        icon: Brain,
+        icon: Leaf,
         color: "bg-orange-500",
         desc: "Generative adversarial analysis..."
     },

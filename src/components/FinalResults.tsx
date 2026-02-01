@@ -6,6 +6,9 @@ import { AlertCircle, HelpCircle, Scan, Leaf, FileText } from 'lucide-react';
 import { computeLeafCrops, LeafCrop } from '../lib/leafCrops';
 import { buildComplianceSummaryText, findRestrictedChemicals } from '../lib/regulatory';
 import { generateTimeTravelPreview } from '../lib/timeTravel';
+import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
+import { projectAssessmentRisk } from '../lib/agroRisk';
+import { calibrateForAssessment } from '../lib/confidenceCalibration';
 import { fetchAgroWeather } from '../services/agroWeather';
 import { summarizeDailyWeather, type DailyAgroSummary } from '../lib/agroRisk';
 
@@ -131,12 +134,8 @@ interface FinalResultsProps {
   isDemoMode?: boolean;
 }
 
-type StoredCoords = { latitude: number; longitude: number; accuracy?: number; timestamp: number };
-type StoredConsent = 'unknown' | 'granted' | 'denied';
-
-const LS_CONSENT = 'agriresolve_location_consent_v3';
-const LS_COORDS = 'agriresolve_location_coords_v3';
 const LS_AGRO = 'agriresolve_agro_weather_cache_v1';
+const LS_FORECAST_VISUAL = 'agriresolve_forecast_visual_v1';
 
 const safeParse = <T,>(raw: string | null): T | null => {
   if (!raw) return null;
@@ -150,12 +149,18 @@ const safeParse = <T,>(raw: string | null): T | null => {
 export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, isDemoMode }) => {
   const { t } = useTranslation();
 
+  const { consent, coords, requestPermission, disable: disableLocation } = useLocationWeather();
+
   const [timeTravel, setTimeTravel] = useState<number>(0); // 0..100
   const [futurePreview, setFuturePreview] = useState<string | null>(null);
   const [isGeneratingFuture, setIsGeneratingFuture] = useState<boolean>(false);
   const [forecastSummaries, setForecastSummaries] = useState<DailyAgroSummary[] | null>(null);
   const [forecastError, setForecastError] = useState<string | null>(null);
   const [forecastMode, setForecastMode] = useState<'live' | 'demo' | 'unavailable'>('unavailable');
+  const [showForecastVisual, setShowForecastVisual] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(LS_FORECAST_VISUAL) === 'true';
+  });
 
   const complianceHits = useMemo(() => {
     const text = [
@@ -274,8 +279,6 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
         return;
       }
 
-      const consent = typeof window !== 'undefined' ? (window.localStorage.getItem(LS_CONSENT) as StoredConsent | null) : null;
-      const coords = typeof window !== 'undefined' ? safeParse<StoredCoords>(window.localStorage.getItem(LS_COORDS)) : null;
       if (consent !== 'granted' || !coords) {
         if (!cancelled) {
           setForecastSummaries(null);
@@ -321,7 +324,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
     return () => {
       cancelled = true;
     };
-  }, [isDemoMode]);
+  }, [isDemoMode, consent, coords?.latitude, coords?.longitude]);
 
   useEffect(() => {
     let cancelled = false;
@@ -420,8 +423,9 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
     let cancelled = false;
 
     const run = async () => {
-      if (!sourceImage) {
+      if (!showForecastVisual || !sourceImage) {
         setFuturePreview(null);
+        setIsGeneratingFuture(false);
         return;
       }
 
@@ -444,7 +448,15 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
     return () => {
       cancelled = true;
     };
-  }, [sourceImage, data?.visionEvidence?.attention_boxes, activeForecast?.riskScore, activeForecast?.wetHours, dayIndex]);
+  }, [showForecastVisual, sourceImage, data?.visionEvidence?.attention_boxes, activeForecast?.riskScore, activeForecast?.wetHours, dayIndex]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LS_FORECAST_VISUAL, showForecastVisual ? 'true' : 'false');
+    } catch {
+      // ignore
+    }
+  }, [showForecastVisual]);
 
   // Keep selection valid when new results arrive
   useEffect(() => {
@@ -465,10 +477,29 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
   const riskBadge = useMemo(() => {
     if (!activeForecast) return null;
     const score = activeForecast.riskScore;
-    if (score >= 70) return { label: 'Higher likelihood', className: 'bg-red-50 text-red-700 border-red-200' };
-    if (score >= 45) return { label: 'Moderate likelihood', className: 'bg-amber-50 text-amber-700 border-amber-200' };
-    return { label: 'Lower likelihood', className: 'bg-green-50 text-green-700 border-green-200' };
-  }, [activeForecast]);
+    if (score >= 70) return { label: t('likelihood_high', { defaultValue: 'Higher likelihood' }), className: 'bg-red-50 text-red-700 border-red-200' };
+    if (score >= 45) return { label: t('likelihood_moderate', { defaultValue: 'Moderate likelihood' }), className: 'bg-amber-50 text-amber-700 border-amber-200' };
+    return { label: t('likelihood_low', { defaultValue: 'Lower likelihood' }), className: 'bg-green-50 text-green-700 border-green-200' };
+  }, [activeForecast, t]);
+
+  const projected = useMemo(() => {
+    if (!activeForecast) return null;
+    return projectAssessmentRisk({
+      decision: data?.arbitrationResult?.decision,
+      decisionConfidence: data?.arbitrationResult?.confidence,
+      qualityScore: data?.quality?.score,
+      weatherRiskScore: activeForecast.riskScore,
+      wetHours: activeForecast.wetHours,
+      avgTempC: activeForecast.avgTempC,
+      precipMm: activeForecast.precipMm,
+    });
+  }, [activeForecast, data?.arbitrationResult?.decision, data?.arbitrationResult?.confidence, data?.quality?.score]);
+
+  const overallEvidence = useMemo(() => {
+    // Use arbitration confidence as the "model signal" for overall display.
+    const signal = typeof data?.arbitrationResult?.confidence === 'number' ? data.arbitrationResult.confidence : 0;
+    return calibrateForAssessment(data, signal);
+  }, [data]);
 
   const getVerdictStyles = (verdict: string) => {
     switch (verdict) {
@@ -513,11 +544,11 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
             <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200">
               <img src={sourceImage} alt={t('source_image', { defaultValue: 'Source Image' })} className="w-full h-full object-cover" />
 
-              {/* Time-travel overlay (future preview) */}
-              {futurePreview && (
+              {/* Optional visual overlay (forecast visualizer) */}
+              {showForecastVisual && futurePreview && (
                 <img
                   src={futurePreview}
-                  alt={t('time_travel_future', { defaultValue: 'Simulated future preview' })}
+                  alt={t('time_travel_future', { defaultValue: 'Forecast visual preview' })}
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                   style={{
                     clipPath: `inset(0 ${Math.max(0, 100 - timeTravel)}% 0 0)`,
@@ -528,7 +559,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
               )}
 
               {/* Slider divider line */}
-              {futurePreview && timeTravel > 0 && timeTravel < 100 && (
+              {showForecastVisual && futurePreview && timeTravel > 0 && timeTravel < 100 && (
                 <div
                   className="absolute top-0 bottom-0 w-[2px] bg-white/80 shadow-[0_0_0_1px_rgba(0,0,0,0.25)] pointer-events-none"
                   style={{ left: `${timeTravel}%` }}
@@ -628,7 +659,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
               })}
             </div>
 
-            {/* Time-travel controls */}
+            {/* Forecast controls */}
             <div className="mt-3 bg-white/70 border border-gray-200 rounded-xl p-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-[11px] font-bold text-gray-600 uppercase tracking-widest">
@@ -661,6 +692,38 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
                 )}
               </div>
 
+              {!isDemoMode && (
+                <div className="mt-2 flex items-center gap-2">
+                  {consent !== 'granted' ? (
+                    <button
+                      type="button"
+                      onClick={() => requestPermission()}
+                      className="px-2 py-1 rounded-lg text-[11px] font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    >
+                      {t('enable_live_forecast', { defaultValue: 'Enable live forecast' })}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => disableLocation()}
+                      className="px-2 py-1 rounded-lg text-[11px] font-bold bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-colors"
+                    >
+                      {t('disable_location', { defaultValue: 'Disable location' })}
+                    </button>
+                  )}
+
+                  <label className="ml-auto flex items-center gap-2 text-[11px] text-gray-600 font-medium select-none">
+                    <input
+                      type="checkbox"
+                      checked={showForecastVisual}
+                      onChange={(e) => setShowForecastVisual(e.target.checked)}
+                      className="accent-green-600"
+                    />
+                    {t('visual_overlay', { defaultValue: 'Visual overlay' })}
+                  </label>
+                </div>
+              )}
+
               <div className="mt-2 flex items-center gap-3">
                 <span className="text-[11px] font-medium text-gray-500">{t('now', { defaultValue: 'Now' })}</span>
                 <input
@@ -670,20 +733,17 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
                   value={timeTravel}
                   onChange={(e) => setTimeTravel(Number(e.target.value))}
                   className="flex-1"
-                  disabled={!futurePreview}
+                  disabled={!forecastSummaries || forecastSummaries.length === 0}
                 />
                 <span className="text-[11px] font-medium text-gray-500">{t('later', { defaultValue: 'Later' })}</span>
               </div>
 
               <div className="mt-2 text-[11px] text-gray-500 font-medium">
-                {futurePreview
-                  ? t('time_travel_note', {
-                      defaultValue:
-                        'Forecast-based visualization only. It is not a diagnosis and may be inaccurate. Monitor crops and consult local guidance.',
-                    })
+                {forecastSummaries && forecastSummaries.length > 0
+                  ? t('forecast_guidance', { defaultValue: 'Forecast-driven risk projection (weather + current assessment). Treat as guidance, not a diagnosis.' })
                   : isGeneratingFuture
                     ? t('generating_preview', { defaultValue: 'Generating preview…' })
-                    : t('preview_unavailable', { defaultValue: 'Preview unavailable for this image.' })}
+                    : t('preview_unavailable', { defaultValue: 'Forecast unavailable until location is enabled.' })}
               </div>
 
               {forecastError && forecastMode === 'unavailable' && (
@@ -694,7 +754,17 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
 
               {activeForecast && activeForecast.drivers.length > 0 && (
                 <div className="mt-2 text-[11px] text-gray-500">
-                  <span className="font-semibold text-gray-600">Drivers:</span> {activeForecast.drivers.join(' • ')}
+                  <span className="font-semibold text-gray-600">{t('drivers_label', { defaultValue: 'Drivers:' })}</span> {activeForecast.drivers.join(' • ')}
+                </div>
+              )}
+
+              {projected && (
+                <div className="mt-2 text-[11px] text-gray-600">
+                  <span className="font-semibold text-gray-700">{t('projection_label', { defaultValue: 'Projection:' })}</span> {projected.label}
+                  <span className="text-gray-500"> • {t('est_worsening', { defaultValue: 'est. worsening {{pct}}%', pct: Math.round(projected.worseningProbability * 100) })}</span>
+                  {typeof projected.uncertainty === 'number' && (
+                    <span className="text-gray-500"> • {t('uncertainty_pct', { defaultValue: 'uncertainty {{pct}}%', pct: Math.round(projected.uncertainty * 100) })}</span>
+                  )}
                 </div>
               )}
             </div>
@@ -807,9 +877,17 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
                     <p className="text-xs text-gray-500">{leaf.condition === 'Unknown' ? t('condition_unclear', { defaultValue: 'Condition Unclear' }) : leaf.condition}</p>
                   </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${leaf.confidence > 0.8 ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                  {formatConfidence(leaf.confidence)} {t('confidence_short', { defaultValue: 'Conf' })}
-                </div>
+                {(() => {
+                  const calibrated = calibrateForAssessment(data, typeof leaf.confidence === 'number' ? leaf.confidence : 0);
+                  return (
+                    <div className={`px-3 py-1 rounded-full text-xs font-bold border ${calibrated.final >= 0.7 ? 'bg-green-100 text-green-700 border-green-200' : calibrated.final >= 0.5 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                      {t('evidence_pct', { defaultValue: '{{pct}}% Evidence', pct: Math.round(calibrated.final * 100) })}
+                      <span className="ml-2 text-[10px] font-medium opacity-70">
+                        ({t('signal_short', { defaultValue: 'signal' })} {formatConfidence(leaf.confidence)})
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -817,7 +895,7 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
                   <div className="aspect-[4/3] w-full rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
                     <img
                       src={leafCropById.get(leaf.id)?.dataUrl || leafCrops[index]?.dataUrl || sourceImage || ''}
-                      alt={`${leaf.id} thumbnail`}
+                      alt={t('leaf_thumbnail_alt', { defaultValue: '{{id}} thumbnail', id: leaf.id })}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -868,6 +946,20 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
           <ReactMarkdown>
             {data.explanation?.summary}
           </ReactMarkdown>
+        </div>
+
+        <div className="mt-4 text-sm text-gray-600">
+          <span className="font-semibold text-gray-700">{t('evidence_strength_label', { defaultValue: 'Evidence strength:' })}</span>{' '}
+          {Math.round(overallEvidence.final * 100)}% ({t(overallEvidence.labelKey, { defaultValue: overallEvidence.label })})
+          <div className="mt-1 text-[11px] text-gray-500">
+            {(() => {
+              const translated = (overallEvidence.reasonParts ?? [])
+                .slice(0, 4)
+                .map((p) => t(p.key, { defaultValue: '', ...(p.params ?? {}) }))
+                .filter(Boolean);
+              return (translated.length ? translated : overallEvidence.reasons.slice(0, 4)).join(' • ');
+            })()}
+          </div>
         </div>
 
         <div className="mt-8 border-t border-gray-100 pt-8">

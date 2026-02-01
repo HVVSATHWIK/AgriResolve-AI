@@ -41,5 +41,5 @@ void main() {
     // Soft alpha at edges
     float alpha = smoothstep(0.0, 0.6, shape);
 
-    gl_FragColor = vec4(color, alpha * 0.9);
+    gl_FragColor = vec4(color, alpha * 0.65);
 }

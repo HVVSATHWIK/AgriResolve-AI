@@ -4,12 +4,13 @@ import { Points, PointMaterial } from '@react-three/drei';
 import * as random from 'maath/random/dist/maath-random.esm';
 import * as THREE from 'three';
 import { FallingLeavesGPGPU } from './FallingLeavesGPGPU';
+import { WindStreaks } from './WindStreaks';
 
 const Particles = (props: Record<string, unknown>) => {
     const ref = useRef<THREE.Points>(null);
 
-    // Generate 2000 random points in a sphere
-    const sphere = useMemo(() => random.inSphere(new Float32Array(2000 * 3), { radius: 1.5 }), []);
+    // Subtle background particles (keep light so it doesn't distract)
+    const sphere = useMemo(() => random.inSphere(new Float32Array(1100 * 3), { radius: 1.5 }), []);
 
     useFrame((state, delta) => {
         if (ref.current) {
@@ -27,7 +28,7 @@ const Particles = (props: Record<string, unknown>) => {
                     size={0.003}
                     sizeAttenuation={true}
                     depthWrite={false}
-                    opacity={0.18}
+                    opacity={0.12}
                 />
             </Points>
         </group>
@@ -37,7 +38,7 @@ const Particles = (props: Record<string, unknown>) => {
 const Connections = () => {
     // A secondary slower moving layer for depth
     const ref = useRef<THREE.Points>(null);
-    const sphere = useMemo(() => random.inSphere(new Float32Array(500 * 3), { radius: 2 }), []);
+    const sphere = useMemo(() => random.inSphere(new Float32Array(250 * 3), { radius: 2 }), []);
 
     useFrame((state, delta) => {
         if (ref.current) {
@@ -55,7 +56,7 @@ const Connections = () => {
                     size={0.005}
                     sizeAttenuation={true}
                     depthWrite={false}
-                    opacity={0.14}
+                    opacity={0.10}
                 />
             </Points>
         </group>
@@ -64,11 +65,14 @@ const Connections = () => {
 
 export const BioNetworkScene: React.FC = () => {
     return (
-        <div className="fixed inset-0 w-full h-full -z-10 bg-gradient-to-br from-green-50/50 to-white/80 pointer-events-none">
-            <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+        <div className="fixed inset-0 w-full h-full -z-10 bg-gradient-to-br from-green-50/30 via-white/85 to-white/95 pointer-events-none">
+            <Canvas className="opacity-85" camera={{ position: [0, 0, 5], fov: 60 }}>
                 {/* Existing Particles */}
                 <Particles />
                 <Connections />
+
+                {/* Visible sideways airflow */}
+                <WindStreaks />
 
                 {/* High-Fidelity GPGPU Leaves */}
                 <FallingLeavesGPGPU />

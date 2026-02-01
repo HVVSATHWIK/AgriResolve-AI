@@ -12,7 +12,7 @@ import leafFragment from '../shaders/leafFragment.glsl?raw';
 
 // Extend Three elements if necessary (though we use primitives mostly)
 
-const TEXTURE_SIZE = 28; // 28x28 = 784 leaves (smoother flow)
+const TEXTURE_SIZE = 20; // 20x20 = 400 leaves (less clutter behind UI)
 
 export const FallingLeavesGPGPU: React.FC = () => {
     const { gl } = useThree();
@@ -73,7 +73,7 @@ export const FallingLeavesGPGPU: React.FC = () => {
             velVariable.material.uniforms = {
             uTime: { value: 0 },
             uDelta: { value: 0 },
-            uSpeed: { value: 0.05 }, // calmer fall speed
+            uSpeed: { value: 0.055 }, // calm but with gentle lateral drift
             uCurlFreq: { value: 0.10 }, // smoother curl noise
             uSeed: { value: new THREE.Vector4(Math.random(), Math.random(), Math.random(), Math.random()) },
             resolution: { value: new THREE.Vector2(TEXTURE_SIZE, TEXTURE_SIZE) }
@@ -126,7 +126,7 @@ export const FallingLeavesGPGPU: React.FC = () => {
     const particlesGeom = useMemo(() => {
         // Determine Shape: Simple Plane for Leaf
         // We can use a PlaneBufferGeometry or a custom BufferGeometry
-        const geometry = new THREE.PlaneGeometry(0.1, 0.1);
+        const geometry = new THREE.PlaneGeometry(0.085, 0.085);
         // Alternatively, a slightly curved geometry if we wanted "High Fidelity 3D"
         // sticking to plane for performance/simplicity first, shader handles curvature via normal map or vertex displace if needed.
 

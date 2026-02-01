@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const stripMarkdownForSpeech = (text: string) => {
   // remove code blocks and inline code
@@ -19,6 +19,7 @@ const stripMarkdownForSpeech = (text: string) => {
 export const useTextToSpeech = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const sessionRef = useRef(0);
 
   const hasSupport = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -50,6 +51,7 @@ export const useTextToSpeech = () => {
 
   const cancel = useCallback(() => {
     if (!hasSupport) return;
+    sessionRef.current += 1;
     try {
       window.speechSynthesis.cancel();
     } finally {
@@ -78,6 +80,10 @@ export const useTextToSpeech = () => {
     (text: string, lang: string = 'en-US') => {
       if (!hasSupport) return;
 
+      // New session; invalidates any pending callbacks from previous utterances.
+      sessionRef.current += 1;
+      const session = sessionRef.current;
+
       // Cancel any current speech
       window.speechSynthesis.cancel();
 
@@ -92,6 +98,10 @@ export const useTextToSpeech = () => {
       let idx = 0;
 
       const speakNext = () => {
+        if (sessionRef.current !== session) {
+          setIsSpeaking(false);
+          return;
+        }
         if (idx >= chunks.length) {
           setIsSpeaking(false);
           return;
@@ -105,6 +115,7 @@ export const useTextToSpeech = () => {
         if (preferredVoice) utterance.voice = preferredVoice;
 
         utterance.onstart = () => {
+          if (sessionRef.current !== session) return;
           setIsSpeaking(true);
           try {
             if (window.speechSynthesis.paused) window.speechSynthesis.resume();
@@ -114,11 +125,19 @@ export const useTextToSpeech = () => {
         };
 
         utterance.onend = () => {
+          if (sessionRef.current !== session) {
+            setIsSpeaking(false);
+            return;
+          }
           idx += 1;
           speakNext();
         };
 
         utterance.onerror = () => {
+          if (sessionRef.current !== session) {
+            setIsSpeaking(false);
+            return;
+          }
           idx += 1;
           speakNext();
         };

@@ -553,6 +553,7 @@ const App: React.FC = () => {
               <HypothesisDebate
                 healthy={data.healthyResult}
                 disease={data.diseaseResult}
+                assessment={data}
                 isVisible={[AssessmentStatus.DEBATING, AssessmentStatus.ARBITRATING, AssessmentStatus.EXPLAINING, AssessmentStatus.COMPLETED].includes(status)}
               />
             )}
@@ -574,7 +575,9 @@ const App: React.FC = () => {
         )}
 
 
-        <AssistantWidget data={data} />
+        {status === AssessmentStatus.COMPLETED && data && (
+          <AssistantWidget data={data} />
+        )}
       </div>
     </Layout>
   );

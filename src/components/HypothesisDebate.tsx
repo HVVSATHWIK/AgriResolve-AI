@@ -1,19 +1,24 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { HypothesisResult } from '../types';
+import { AssessmentData, HypothesisResult } from '../types';
 import { ShieldCheck, AlertTriangle } from 'lucide-react';
+import { calibrateForAssessment } from '../lib/confidenceCalibration';
 
 interface HypothesisDebateProps {
   healthy: HypothesisResult;
   disease: HypothesisResult;
+  assessment?: AssessmentData;
   isVisible: boolean;
 }
 
 import { useTranslation } from 'react-i18next';
 
-export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, disease, isVisible }) => {
+export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, disease, assessment, isVisible }) => {
   const { t } = useTranslation();
   if (!isVisible) return null;
+
+  const healthyCal = assessment ? calibrateForAssessment(assessment, healthy?.score ?? 0) : null;
+  const diseaseCal = assessment ? calibrateForAssessment(assessment, disease?.score ?? 0) : null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -29,8 +34,21 @@ export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, dis
             <h3 className="font-bold text-lg text-gray-900 leading-tight">{t('hypothesis_healthy')}</h3>
             <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">{t('agent_defense')}</p>
           </div>
-          <div className="ml-auto bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
-            {(healthy?.score * 100).toFixed(0)}% Conf
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-100">
+              {healthyCal
+                ? t('evidence_pct', { defaultValue: '{{pct}}% Evidence', pct: Math.round(healthyCal.final * 100) })
+                : t('signal_pct', { defaultValue: '{{pct}}% Signal', pct: ((healthy?.score ?? 0) * 100).toFixed(0) })}
+            </div>
+            {healthyCal && (
+              <div className="text-[10px] text-blue-700/80 font-medium">
+                {t('model_signal_quality_line', {
+                  defaultValue: 'Model signal {{signal}}% • Quality {{quality}}%',
+                  signal: Math.round((healthy?.score ?? 0) * 100),
+                  quality: Math.round((assessment?.quality?.score ?? 0) * 100),
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -40,6 +58,20 @@ export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, dis
               <li key={i}><ReactMarkdown components={{ p: React.Fragment }}>{arg}</ReactMarkdown></li>
             ))}
           </ul>
+          {healthyCal && (
+            <div className="mt-3 text-[11px] text-gray-500">
+              <div className="font-semibold text-gray-600">{t('why_this_score', { defaultValue: 'Why this score' })}</div>
+              <div>
+                {(() => {
+                  const translated = (healthyCal.reasonParts ?? [])
+                    .slice(0, 4)
+                    .map((p) => t(p.key, { defaultValue: '', ...(p.params ?? {}) }))
+                    .filter(Boolean);
+                  return (translated.length ? translated : (healthyCal.reasons ?? []).slice(0, 4)).join(' • ');
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -55,8 +87,21 @@ export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, dis
             <h3 className="font-bold text-lg text-gray-900 leading-tight">{t('hypothesis_disease')}</h3>
             <p className="text-xs text-red-600 font-medium uppercase tracking-wide">{t('agent_pathology')}</p>
           </div>
-          <div className="ml-auto bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
-            {(disease?.score * 100).toFixed(0)}% Conf
+          <div className="ml-auto flex flex-col items-end gap-1">
+            <div className="bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-100">
+              {diseaseCal
+                ? t('evidence_pct', { defaultValue: '{{pct}}% Evidence', pct: Math.round(diseaseCal.final * 100) })
+                : t('signal_pct', { defaultValue: '{{pct}}% Signal', pct: ((disease?.score ?? 0) * 100).toFixed(0) })}
+            </div>
+            {diseaseCal && (
+              <div className="text-[10px] text-red-700/80 font-medium">
+                {t('model_signal_quality_line', {
+                  defaultValue: 'Model signal {{signal}}% • Quality {{quality}}%',
+                  signal: Math.round((disease?.score ?? 0) * 100),
+                  quality: Math.round((assessment?.quality?.score ?? 0) * 100),
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -66,6 +111,20 @@ export const HypothesisDebate: React.FC<HypothesisDebateProps> = ({ healthy, dis
               <li key={i}><ReactMarkdown components={{ p: React.Fragment }}>{arg}</ReactMarkdown></li>
             ))}
           </ul>
+          {diseaseCal && (
+            <div className="mt-3 text-[11px] text-gray-500">
+              <div className="font-semibold text-gray-600">{t('why_this_score', { defaultValue: 'Why this score' })}</div>
+              <div>
+                {(() => {
+                  const translated = (diseaseCal.reasonParts ?? [])
+                    .slice(0, 4)
+                    .map((p) => t(p.key, { defaultValue: '', ...(p.params ?? {}) }))
+                    .filter(Boolean);
+                  return (translated.length ? translated : (diseaseCal.reasons ?? []).slice(0, 4)).join(' • ');
+                })()}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

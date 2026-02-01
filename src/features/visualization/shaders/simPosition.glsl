@@ -16,6 +16,13 @@ void main() {
     // Integration: p = p + v * dt
     vec3 newPos = pos.xyz + vel.xyz * uDelta;
     
+    // Horizontal wrap so sideways breeze keeps the scene populated
+    if (newPos.x > uBounds.w) {
+        newPos.x = uBounds.z;
+    } else if (newPos.x < uBounds.z) {
+        newPos.x = uBounds.w;
+    }
+
     // Boundary check (Bottom)
     if (newPos.y < uBounds.y) { // Below bottom edge
         newPos.y = uBounds.x + rand(vec2(uv.x, uTime)) * 1.5; // Respawn near top with variation

@@ -38,14 +38,21 @@ void main() {
     vec3 pos = posData.xyz;
     vec3 vel = velData.xyz;
     
-    // Orientation logic
-    // Leaves tumble based on speed and random factors
-    vec3 axis = normalize(cross(vec3(0.0, 1.0, 0.0), vel + vec3(0.1))); // Cross up with velocity
-    // Slow, stable tumble (avoid rapid oscillation)
+    // Orientation logic (natural airflow)
+    // Avoid full tumbling/flipping; instead use a stable tilt + gentle sway.
+    float id = posData.w;
     float speed = clamp(length(vel), 0.0, 1.0);
-    float angle = speed * uTime * 0.6 + pos.x * 0.3; // Lower time multiplier + smaller random offset
-    
-    mat4 rot = rotationMatrix(axis, angle);
+
+    // Small yaw bias from sideways wind (x) + subtle periodic sway
+    float flowYaw = clamp(vel.x, -0.6, 0.6) * 0.18;
+    float sway = sin(uTime * 0.75 + id * 6.283) * (0.10 + 0.08 * speed);
+
+    // Stable forward tilt with tiny breathing motion
+    float tilt = 0.22 + sin(uTime * 0.35 + id * 4.1) * 0.06;
+
+    mat4 rotYaw = rotationMatrix(vec3(0.0, 0.0, 1.0), flowYaw + sway);
+    mat4 rotTilt = rotationMatrix(vec3(1.0, 0.0, 0.0), tilt);
+    mat4 rot = rotYaw * rotTilt;
     
     // Apply rotation to the simulated vertex position (local space)
     // Per-leaf scale variation (seeded by pos.w)
