@@ -68,6 +68,7 @@ interface ChatMessage {
 class SessionManager {
   private sessions: Map<string, SessionState> = new Map();
   private userSessions: Map<string, Set<string>> = new Map();
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   public async createSession(
     sessionId: string,
@@ -304,9 +305,19 @@ class SessionManager {
 
   // Periodic cleanup
   public startCleanupTimer(): void {
-    setInterval(() => {
+    if (this.cleanupInterval) return;
+
+    this.cleanupInterval = setInterval(() => {
       this.cleanupInactiveSessions();
     }, 60 * 60 * 1000); // Run every hour
+
+    this.cleanupInterval.unref?.();
+  }
+
+  public stopCleanupTimer(): void {
+    if (!this.cleanupInterval) return;
+    clearInterval(this.cleanupInterval);
+    this.cleanupInterval = null;
   }
 }
 

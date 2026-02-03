@@ -237,6 +237,7 @@ class ServiceRegistry extends EventEmitter {
 
     // Set up periodic health checks
     const interval = setInterval(performHealthCheck, config.healthCheckInterval);
+    interval.unref?.();
     this.healthCheckIntervals.set(config.name, interval);
 
     logger.info(`Health check started for ${config.name} (interval: ${config.healthCheckInterval}ms)`);

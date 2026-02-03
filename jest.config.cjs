@@ -5,7 +5,9 @@ module.exports = {
   roots: ['<rootDir>/server', '<rootDir>/src'],
   testMatch: [
     '**/__tests__/**/*.ts',
-    '**/?(*.)+(spec|test).ts'
+    '**/__tests__/**/*.tsx',
+    '**/?(*.)+(spec|test).ts',
+    '**/?(*.)+(spec|test).tsx'
   ],
   testPathIgnorePatterns: ['<rootDir>/server/__tests__/setup.ts'],
   transform: {

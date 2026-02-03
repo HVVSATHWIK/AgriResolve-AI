@@ -2,15 +2,20 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
 
 import { apiGateway } from './gateway/apiGateway.js';
+import { analysisRouter } from './routes/analysis.js';
+import timezoneRouter from './routes/timezone.js';
+import { healthRouter } from './routes/health.js';
 import { websocketManager } from './websocket/websocketManager.js';
 import { serviceRegistry } from './services/serviceRegistry.js';
 import { authMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { hourlyRateLimiter, shortTermRateLimiter, rateLimitStatus } from './middleware/rateLimiter.js';
 import { logger } from './utils/logger.js';
 
 // Load environment variables
@@ -25,7 +30,12 @@ const io = new SocketIOServer(server, {
   }
 });
 
-const PORT = process.env.PORT || 3001;
+// Security: Bind to localhost in development, allow configuration in production
+const HOST = process.env.NODE_ENV === 'production' 
+  ? process.env.HOST || '0.0.0.0'
+  : '127.0.0.1';
+
+const PORT = parseInt(process.env.PORT || '3001', 10);
 
 // Security middleware
 app.use(helmet({
@@ -40,9 +50,22 @@ app.use(helmet({
   }
 }));
 
+// CORS configuration for frontend communication
 app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: process.env.FRONTEND_URL || process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true
+}));
+
+// Session management
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'change-this-secret-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
 }));
 
 // Rate limiting
@@ -60,17 +83,26 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    services: serviceRegistry.getHealthStatus()
-  });
-});
+// Health check endpoints
+// Requirements 16.1, 16.2: Service availability checking
+app.use('/api/health', healthRouter);
 
 // Authentication middleware for protected routes
 app.use('/api', authMiddleware);
+
+// Rate limiting middleware for API routes (session-based)
+// Requirement 7.1, 7.2, 7.5: Enforce rate limits per session
+app.use('/api', rateLimitStatus);
+app.use('/api', shortTermRateLimiter);
+app.use('/api', hourlyRateLimiter);
+
+// Analysis endpoint with Gemini API proxy
+// Requirements 5.1, 5.2, 5.3, 5.4, 5.5: Secure API proxying
+app.use('/api', analysisRouter);
+
+// Timezone management endpoints
+// Requirements 12.1, 12.3: User timezone detection and storage
+app.use('/api/timezone', timezoneRouter);
 
 // API Gateway routing
 app.use('/api', apiGateway);
@@ -82,10 +114,12 @@ websocketManager.initialize(io);
 app.use(errorHandler);
 
 // Start server
-server.listen(PORT, () => {
-  logger.info(`🚀 AgriResolve Collaborative Server running on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+  logger.info(`🚀 AgriResolve Collaborative Server running on ${HOST}:${PORT}`);
   logger.info(`📡 WebSocket server initialized`);
   logger.info(`🔒 Security middleware active`);
+  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`🔐 Session management enabled`);
 
   // Initialize services
   serviceRegistry.startServices();

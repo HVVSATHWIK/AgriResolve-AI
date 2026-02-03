@@ -470,6 +470,8 @@ class OperationalTransform {
 export const operationalTransform = new OperationalTransform();
 
 // Start cleanup timer
-setInterval(() => {
+const operationalTransformCleanupInterval = setInterval(() => {
   operationalTransform.cleanup();
 }, 60 * 60 * 1000); // Run cleanup every hour
+
+operationalTransformCleanupInterval.unref?.();

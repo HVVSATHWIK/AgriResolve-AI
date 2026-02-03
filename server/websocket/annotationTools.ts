@@ -621,6 +621,8 @@ class AnnotationToolManager {
 export const annotationToolManager = new AnnotationToolManager();
 
 // Start cleanup timer
-setInterval(() => {
+const annotationCleanupInterval = setInterval(() => {
   annotationToolManager.cleanup();
 }, 60 * 60 * 1000); // Run cleanup every hour
+
+annotationCleanupInterval.unref?.();

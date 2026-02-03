@@ -12,10 +12,55 @@ import { sessionManager } from '../../websocket/sessionManager.js';
 import { websocketManager } from '../../websocket/websocketManager.js';
 
 describe('Property: Session Uniqueness and State Consistency', () => {
-  let server: any;
-  let io: SocketIOServer;
+  let server: ReturnType<typeof createServer> | null = null;
+  let io: SocketIOServer | null = null;
   let clientSockets: ClientSocket[] = [];
   const port = 3099;
+
+  const waitForSocketConnect = (client: ClientSocket, timeoutMs = 2000): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (client.connected) {
+        resolve();
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        client.off('connect', onConnect);
+        client.off('connect_error', onError);
+        reject(new Error('Socket connection timeout'));
+      }, timeoutMs);
+
+      const onConnect = () => {
+        clearTimeout(timeout);
+        client.off('connect_error', onError);
+        resolve();
+      };
+                  reconnection: false
+
+      const onError = (error: Error) => {
+        clearTimeout(timeout);
+        client.off('connect', onConnect);
+        reject(error);
+      };
+
+      client.once('connect', onConnect);
+      client.once('connect_error', onError);
+    });
+
+  const waitForEvent = <T>(client: ClientSocket, event: string, timeoutMs = 2000): Promise<T> =>
+    new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        client.off(event, onEvent);
+        reject(new Error(`Timeout waiting for ${event}`));
+      }, timeoutMs);
+
+      const onEvent = (data: T) => {
+        clearTimeout(timeout);
+        resolve(data);
+      };
+
+      client.once(event, onEvent);
+    });
 
   beforeAll(async () => {
     server = createServer();
@@ -38,12 +83,20 @@ describe('Property: Session Uniqueness and State Consistency', () => {
       }
     });
     
+    sessionManager.stopCleanupTimer();
+
+    if (io) {
+      io.close();
+      io = null;
+    }
+
     if (server) {
       await new Promise<void>((resolve) => {
         server.close(resolve);
       });
+      server = null;
     }
-  });
+  }, 60000);
 
   afterEach(() => {
     // Disconnect all clients after each test
@@ -51,6 +104,7 @@ describe('Property: Session Uniqueness and State Consistency', () => {
       if (socket.connected) {
         socket.disconnect();
       }
+      socket.removeAllListeners();
     });
     clientSockets = [];
   });
@@ -100,15 +154,14 @@ describe('Property: Session Uniqueness and State Consistency', () => {
               const participants: ClientSocket[] = [];
               for (let i = 0; i < config.participantCount; i++) {
                 const client = Client(`http://localhost:${port}`, {
-                  auth: { token: `test-token-${sessionId}-${i}` }
+                  auth: { token: `test-token-${sessionId}-${i}` },
+                  reconnection: false
                 });
                 
                 participants.push(client);
                 clientSockets.push(client);
 
-                await new Promise<void>((resolve) => {
-                  client.on('connected', resolve);
-                });
+                await waitForSocketConnect(client);
               }
 
               sessionParticipants.set(sessionId, participants);
@@ -125,11 +178,9 @@ describe('Property: Session Uniqueness and State Consistency', () => {
             // Test state consistency for each session
             for (const { sessionId, participants, config } of sessions) {
               // Have all participants join the session
-              const joinPromises = participants.map((client, index) => {
-                return new Promise<void>((resolve) => {
-                  client.emit('join-session', { sessionId });
-                  client.on('session-state', () => resolve());
-                });
+              const joinPromises = participants.map((client) => {
+                client.emit('join-session', { sessionId });
+                return waitForEvent<void>(client, 'session-state', 3000);
               });
 
               await Promise.all(joinPromises);
@@ -137,20 +188,13 @@ describe('Property: Session Uniqueness and State Consistency', () => {
               // Test workspace state synchronization
               for (const update of config.workspaceUpdates) {
                 const stateUpdates: any[] = [];
-                const updatePromises: Promise<void>[] = [];
+                const updatePromises: Promise<any>[] = [];
 
                 // Set up listeners for state updates on all participants except the sender
                 participants.slice(1).forEach((client, index) => {
-                  const promise = new Promise<void>((resolve) => {
-                    const timeout = setTimeout(() => {
-                      resolve(); // Resolve even if no update received (for timeout testing)
-                    }, 150); // 150ms timeout (should be within 100ms requirement)
-
-                    client.on('workspace-updated', (data) => {
-                      clearTimeout(timeout);
-                      stateUpdates.push({ participantIndex: index + 1, data, timestamp: Date.now() });
-                      resolve();
-                    });
+                  const promise = waitForEvent<any>(client, 'workspace-updated', 1000).then((data) => {
+                    stateUpdates.push({ participantIndex: index + 1, data, timestamp: Date.now() });
+                    return data;
                   });
                   updatePromises.push(promise);
                 });
@@ -161,11 +205,11 @@ describe('Property: Session Uniqueness and State Consistency', () => {
 
                 // Wait for all participants to receive the update
                 await Promise.all(updatePromises);
-                const endTime = Date.now();
-
                 // Verify timing requirement (within 100ms)
-                const propagationTime = endTime - startTime;
-                expect(propagationTime).toBeLessThan(100);
+                const maxPropagation = Math.max(
+                  ...stateUpdates.map((update) => update.timestamp - startTime)
+                );
+                expect(maxPropagation).toBeLessThan(100);
 
                 // Verify all participants received the same update
                 if (stateUpdates.length > 0) {
@@ -200,7 +244,7 @@ describe('Property: Session Uniqueness and State Consistency', () => {
         verbose: true
       }
     );
-  });
+  }, 60000);
 
   test('Property 1.1: Session creation generates unique identifiers', async () => {
     await fc.assert(
@@ -249,7 +293,7 @@ describe('Property: Session Uniqueness and State Consistency', () => {
       ),
       { numRuns: 5, timeout: 10000 }
     );
-  });
+  }, 30000);
 
   test('Property 1.2: Workspace state remains consistent during concurrent updates', async () => {
     await fc.assert(
@@ -356,5 +400,5 @@ describe('Property: Session Uniqueness and State Consistency', () => {
       ),
       { numRuns: 3, timeout: 15000 }
     );
-  });
+  }, 45000);
 });

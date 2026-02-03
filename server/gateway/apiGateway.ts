@@ -2,6 +2,12 @@ import { Router } from 'express';
 import { serviceRegistry } from '../services/serviceRegistry.js';
 import { logger } from '../utils/logger.js';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import { 
+  validateAnalysisRequest, 
+  validateWeatherData,
+  sanitizeRequestBody 
+} from '../middleware/inputValidator.js';
+import { getRateLimitInfo } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -73,6 +79,56 @@ router.get('/services', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+/**
+ * Analysis endpoint with input validation
+ * Requirements 8.4, 8.5, 8.6: Validate and sanitize all inputs
+ */
+router.post('/analysis', 
+  sanitizeRequestBody,
+  validateAnalysisRequest,
+  validateWeatherData,
+  async (req, res) => {
+    try {
+      const { cropType, image, weatherData, notes, location } = req.body;
+      const rateLimitInfo = getRateLimitInfo(req);
+
+      logger.info('Analysis request received', {
+        cropType,
+        sessionId: req.session?.id,
+        hasWeatherData: !!weatherData,
+        quotaRemaining: rateLimitInfo.hourly.remaining
+      });
+
+      // Here you would integrate with the actual analysis service
+      // For now, return a success response with validation confirmation
+      res.json({
+        success: true,
+        message: 'Analysis request validated successfully',
+        data: {
+          cropType,
+          hasImage: !!image,
+          hasWeatherData: !!weatherData,
+          hasNotes: !!notes,
+          hasLocation: !!location
+        },
+        rateLimitInfo: {
+          quotaRemaining: rateLimitInfo.hourly.remaining,
+          quotaUsed: rateLimitInfo.hourly.used,
+          resetTime: rateLimitInfo.hourly.resetTime
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.error('Analysis request error:', error);
+      res.status(500).json({
+        error: 'Internal Server Error',
+        message: 'Failed to process analysis request',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+);
 
 // Load balancing for high-availability services
 router.use('/load-balance/:serviceName', (req, res, next) => {

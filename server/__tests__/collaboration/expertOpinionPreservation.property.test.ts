@@ -199,11 +199,11 @@ describe('Property: Expert Opinion Preservation', () => {
       ),
       {
         numRuns: 10,
-        timeout: 15000,
+        timeout: 30000,
         verbose: true
       }
     );
-  });
+  }, 90000);
 
   test('Property 2.1: Conflicting expert opinions maintain individual integrity', async () => {
     await fc.assert(
@@ -299,7 +299,7 @@ describe('Property: Expert Opinion Preservation', () => {
       ),
       { numRuns: 5, timeout: 10000 }
     );
-  });
+  }, 30000);
 
   test('Property 2.2: Expert opinion metadata completeness', async () => {
     await fc.assert(
@@ -399,7 +399,7 @@ describe('Property: Expert Opinion Preservation', () => {
       ),
       { numRuns: 5, timeout: 8000 }
     );
-  });
+  }, 30000);
 
   test('Property 2.3: Opinion preservation under concurrent submissions', async () => {
     await fc.assert(

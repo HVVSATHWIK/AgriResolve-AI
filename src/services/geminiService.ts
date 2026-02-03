@@ -1,7 +1,19 @@
+/**
+ * Gemini Service - Backend Proxy Integration
+ * 
+ * Updated to use backend API proxy instead of direct Gemini API calls
+ * Feature: agricultural-accuracy-and-security-fixes
+ * Requirements: 5.1, 5.2
+ */
 
-import { routeGeminiCall } from './gemini';
+import { callAnalysisAPI, type ApiResponse } from './apiClient';
 
-export async function processCropHealth(imageB64: string) {
+/**
+ * Process crop health analysis through backend proxy
+ * Requirement 5.1: Use backend proxy for all Gemini API calls
+ * Requirement 5.2: Never expose API keys in frontend
+ */
+export async function processCropHealth(imageB64: string): Promise<ApiResponse> {
   const prompt = `Act as a multi-agent system (AgriResolve AI) to assess this crop leaf image.
 
 Follow these workflow stages:
@@ -20,6 +32,21 @@ STRICT RULES:
 
 Return the response as a structured JSON object.`;
 
-  const text = await routeGeminiCall('GENERATE_JSON', prompt, imageB64);
-  return JSON.parse(text);
+  const response = await callAnalysisAPI({
+    taskType: 'GENERATE_JSON',
+    prompt,
+    image: imageB64,
+  });
+
+  // Parse the result if it's a string
+  if (typeof response.result === 'string') {
+    try {
+      response.result = JSON.parse(response.result);
+    } catch (e) {
+      // If parsing fails, return as-is
+      console.warn('Failed to parse analysis result as JSON:', e);
+    }
+  }
+
+  return response;
 }
