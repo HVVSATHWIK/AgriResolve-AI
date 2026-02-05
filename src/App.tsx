@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnosis } from './pages/Diagnosis';
+import { Marketplace } from './pages/Marketplace';
+import { Simulator } from './pages/Simulator';
 import { MobileBottomNav } from './components/MobileBottomNav';
 
 const App: React.FC = () => {
@@ -11,6 +13,8 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/diagnosis" element={<Diagnosis />} />
+          <Route path="/market" element={<Marketplace />} />
+          <Route path="/simulator" element={<Simulator />} />
           {/* Redirect unknown routes to Dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

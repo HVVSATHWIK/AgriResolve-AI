@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, ScanLine, LayoutGrid, Settings } from 'lucide-react';
+import { Home, ScanLine, LayoutGrid, TrendingUp, Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const MobileBottomNav: React.FC = () => {
@@ -9,6 +9,8 @@ export const MobileBottomNav: React.FC = () => {
     const navItems = [
         { to: "/", icon: LayoutGrid, label: t('nav_home', "Hub") },
         { to: "/diagnosis", icon: ScanLine, label: t('nav_scan', "Scanner") },
+        { to: "/market", icon: TrendingUp, label: t('nav_market', "Market") },
+        { to: "/simulator", icon: Gamepad2, label: t('nav_sim', "Twin") },
         { to: "/history", icon: Home, label: t('nav_history', "History") }, // Using Home icon as placeholder for now or History icon
     ];
 

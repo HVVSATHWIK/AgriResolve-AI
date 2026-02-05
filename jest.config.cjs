@@ -11,8 +11,12 @@ module.exports = {
   ],
   testPathIgnorePatterns: ['<rootDir>/server/__tests__/setup.ts'],
   transform: {
-  '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.jest.client.json' }],
-  '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/server/tsconfig.jest.json' }],
+    '^.+\\.tsx?$': ['ts-jest', {
+      tsconfig: '<rootDir>/tsconfig.jest.client.json'
+    }],
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: '<rootDir>/server/tsconfig.jest.json'
+    }],
   },
   transformIgnorePatterns: ['<rootDir>/node_modules/'],
   collectCoverageFrom: [

@@ -11,6 +11,7 @@ import { apiGateway } from './gateway/apiGateway.js';
 import { analysisRouter } from './routes/analysis.js';
 import timezoneRouter from './routes/timezone.js';
 import { healthRouter } from './routes/health.js';
+import { marketRouter } from './routes/market.js';
 import { websocketManager } from './websocket/websocketManager.js';
 import { serviceRegistry } from './services/serviceRegistry.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -31,7 +32,7 @@ const io = new SocketIOServer(server, {
 });
 
 // Security: Bind to localhost in development, allow configuration in production
-const HOST = process.env.NODE_ENV === 'production' 
+const HOST = process.env.NODE_ENV === 'production'
   ? process.env.HOST || '0.0.0.0'
   : '127.0.0.1';
 
@@ -98,7 +99,11 @@ app.use('/api', hourlyRateLimiter);
 
 // Analysis endpoint with Gemini API proxy
 // Requirements 5.1, 5.2, 5.3, 5.4, 5.5: Secure API proxying
+// Requirements 5.1, 5.2, 5.3, 5.4, 5.5: Secure API proxying
 app.use('/api', analysisRouter);
+
+// Market Pulse endpoint
+app.use('/api', marketRouter);
 
 // Timezone management endpoints
 // Requirements 12.1, 12.3: User timezone detection and storage

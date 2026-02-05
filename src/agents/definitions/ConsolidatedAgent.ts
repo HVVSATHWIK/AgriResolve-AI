@@ -58,31 +58,31 @@ function parseVisionEvidence(value: unknown): VisionEvidence | null {
   const maybeLeafRegions = Array.isArray(value.leaf_regions) ? (value.leaf_regions as unknown[]) : null;
   const leaf_regions = maybeLeafRegions
     ? maybeLeafRegions
-        .filter(isRecord)
-        .map((r) => ({
-          id: asString(r.id, 'Leaf'),
-          x: asNumber(r.x, 0),
-          y: asNumber(r.y, 0),
-          w: asNumber(r.w, 0),
-          h: asNumber(r.h, 0),
-          confidence: typeof r.confidence === 'number' ? r.confidence : undefined,
-        }))
-        .filter((b) => typeof b.id === 'string' && b.id.length > 0 && b.w > 0 && b.h > 0)
+      .filter(isRecord)
+      .map((r) => ({
+        id: asString(r.id, 'Leaf'),
+        x: asNumber(r.x, 0),
+        y: asNumber(r.y, 0),
+        w: asNumber(r.w, 0),
+        h: asNumber(r.h, 0),
+        confidence: typeof r.confidence === 'number' ? r.confidence : undefined,
+      }))
+      .filter((b) => typeof b.id === 'string' && b.id.length > 0 && b.w > 0 && b.h > 0)
     : undefined;
 
   const maybeBoxes = Array.isArray(value.attention_boxes) ? (value.attention_boxes as unknown[]) : null;
   const attention_boxes = maybeBoxes
     ? maybeBoxes
-        .filter(isRecord)
-        .map((box) => ({
-          x: asNumber(box.x, 0),
-          y: asNumber(box.y, 0),
-          w: asNumber(box.w, 0),
-          h: asNumber(box.h, 0),
-          label: typeof box.label === 'string' ? box.label : undefined,
-          confidence: typeof box.confidence === 'number' ? box.confidence : undefined,
-        }))
-        .filter((b) => b.w > 0 && b.h > 0)
+      .filter(isRecord)
+      .map((box) => ({
+        x: asNumber(box.x, 0),
+        y: asNumber(box.y, 0),
+        w: asNumber(box.w, 0),
+        h: asNumber(box.h, 0),
+        label: typeof box.label === 'string' ? box.label : undefined,
+        confidence: typeof box.confidence === 'number' ? box.confidence : undefined,
+      }))
+      .filter((b) => b.w > 0 && b.h > 0)
     : undefined;
 
   return {
@@ -194,6 +194,13 @@ export class ConsolidatedAgent {
               "explanation": {
                 "summary": "Cautious summary of uncertainty and findings.",
                 "guidance": ["Observation step 1", "When to consult expert"]
+              },
+              "bioProspectorResult": {
+                "plant_name": "Common Name",
+                "scientific_name": "Latin Name",
+                "medicinal_uses": ["Use 1", "Use 2"],
+                "commercial_uses": ["Use 1"],
+                "tips": ["Tip 1"]
               }
             }
 
@@ -203,6 +210,13 @@ export class ConsolidatedAgent {
             - If confidence is low, "decision" MUST be "Unknown".
             - SAFETY: Do NOT provide pesticide/fungicide/herbicide product names, mixing instructions, dosing, spray rates, or any hazardous step-by-step guidance.
             - SAFETY: Do NOT provide human/animal medical advice. If the user mentions exposure/poisoning risk, advise contacting local emergency services/poison control.
+            
+            BIO-PROSPECTOR (Hidden Value):
+            - Identify the plant species carefully (especially if it seems like a weed).
+            - List traditional/Ethnobotanical uses (Ayurveda, etc.).
+            - List commercial biomass potential (fiber, oil, compost).
+            - Provide 1 or 2 practical "tips" for utilizing it. 
+            - If it is a common crop with no "hidden" value, leave lists empty.
         `;
 
     const strictJsonReminder = `\n\nIMPORTANT: Return ONLY valid JSON. Do not include trailing commas, comments, markdown, or extra text. Ensure all strings are properly closed and escaped.`;
@@ -210,7 +224,7 @@ export class ConsolidatedAgent {
     try {
       const responseText = await routeGeminiCall('DEBATE_HIGH_THROUGHPUT', prompt, imageB64);
 
-  let data: unknown;
+      let data: unknown;
       try {
         data = JSON.parse(extractJsonPayload(responseText));
       } catch {
@@ -219,9 +233,9 @@ export class ConsolidatedAgent {
         data = JSON.parse(extractJsonPayload(retryText));
       }
 
-  if (!isRecord(data)) {
-    throw new Error('Model returned non-object JSON payload');
-  }
+      if (!isRecord(data)) {
+        throw new Error('Model returned non-object JSON payload');
+      }
 
       const subjectValidation = isRecord(data.subjectValidation)
         ? (data.subjectValidation as Record<string, unknown>)
@@ -292,42 +306,42 @@ export class ConsolidatedAgent {
 
       const parsedExplanation = isRecord(data.explanation)
         ? {
-            summary: asString(data.explanation.summary, 'Analysis failed.'),
-            guidance: asStringArray(data.explanation.guidance, []),
-          }
+          summary: asString(data.explanation.summary, 'Analysis failed.'),
+          guidance: asStringArray(data.explanation.guidance, []),
+        }
         : { summary: 'Analysis failed.', guidance: [] };
 
       const parsedLeafAssessments = Array.isArray(data.leafAssessments)
         ? (data.leafAssessments as unknown[])
-            .filter(isRecord)
-            .map(item => ({
-              id: asString(item.id, 'Leaf'),
-              observations: asStringArray(item.observations, []),
-              condition: asString(item.condition, 'Unknown'),
-              confidence: asNumber(item.confidence, 0),
-              notes: asString(item.notes, ''),
-            }))
+          .filter(isRecord)
+          .map(item => ({
+            id: asString(item.id, 'Leaf'),
+            observations: asStringArray(item.observations, []),
+            condition: asString(item.condition, 'Unknown'),
+            confidence: asNumber(item.confidence, 0),
+            notes: asString(item.notes, ''),
+          }))
         : [];
 
       const parsedUncertainty = isRecord(data.uncertaintyFactors)
         ? {
-            lowImageQuality: Boolean(data.uncertaintyFactors.lowImageQuality),
-            multipleLeaves: Boolean(data.uncertaintyFactors.multipleLeaves),
-            visuallySimilarConditions: Boolean(data.uncertaintyFactors.visuallySimilarConditions),
-            other: asStringArray(data.uncertaintyFactors.other, []),
-          }
+          lowImageQuality: Boolean(data.uncertaintyFactors.lowImageQuality),
+          multipleLeaves: Boolean(data.uncertaintyFactors.multipleLeaves),
+          visuallySimilarConditions: Boolean(data.uncertaintyFactors.visuallySimilarConditions),
+          other: asStringArray(data.uncertaintyFactors.other, []),
+        }
         : {
-            lowImageQuality: false,
-            multipleLeaves: false,
-            visuallySimilarConditions: false,
-            other: [],
-          };
+          lowImageQuality: false,
+          multipleLeaves: false,
+          visuallySimilarConditions: false,
+          other: [],
+        };
 
       const parsedSubjectValidation = subjectValidation
         ? {
-            valid_subject: Boolean(subjectValidation.valid_subject),
-            message: asString(subjectValidation.message, 'Valid leaf detected'),
-          }
+          valid_subject: Boolean(subjectValidation.valid_subject),
+          message: asString(subjectValidation.message, 'Valid leaf detected'),
+        }
         : undefined;
 
       return {
@@ -341,6 +355,13 @@ export class ConsolidatedAgent {
         leafAssessments: parsedLeafAssessments,
         uncertaintyFactors: parsedUncertainty,
         subjectValidation: parsedSubjectValidation,
+        bioProspectorResult: isRecord(data.bioProspectorResult) ? {
+          plant_name: asString(data.bioProspectorResult.plant_name, 'Unknown'),
+          scientific_name: asString(data.bioProspectorResult.scientific_name, 'Unknown'),
+          medicinal_uses: asStringArray(data.bioProspectorResult.medicinal_uses, []),
+          commercial_uses: asStringArray(data.bioProspectorResult.commercial_uses, []),
+          tips: asStringArray(data.bioProspectorResult.tips, [])
+        } : undefined
       };
     } catch (error) {
       console.error("Consolidated Agent Error:", error);

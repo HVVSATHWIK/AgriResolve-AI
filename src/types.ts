@@ -45,9 +45,18 @@ export interface AssessmentData {
     other: string[];
   };
   subjectValidation?: SubjectValidation;
+  bioProspectorResult?: BioProspectorResult;
 }
 
 export interface SubjectValidation {
   valid_subject: boolean;
   message: string;
+}
+
+export interface BioProspectorResult {
+  plant_name: string;
+  scientific_name: string;
+  medicinal_uses: string[];
+  commercial_uses: string[];
+  tips: string[];
 }

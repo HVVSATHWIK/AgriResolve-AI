@@ -1,8 +1,8 @@
-import React from 'react';
 import { Layout } from '../components/Layout';
 import { useNavigate } from 'react-router-dom';
-import { ScanLine, Box, Sprout, TrendingUp, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { FeatureIcon } from '../components/FeatureIcon';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -13,8 +13,8 @@ export const Dashboard: React.FC = () => {
             id: 'scanner',
             title: t('app_scanner_title', 'Crop Scanner'),
             desc: t('app_scanner_desc', 'AI-powered disease diagnosis'),
-            icon: ScanLine,
-            color: 'bg-green-100 text-green-600',
+            iconType: 'SCANNER' as const,
+            color: 'bg-green-50 text-green-600 border-green-100',
             action: () => navigate('/diagnosis'),
             status: 'Active'
         },
@@ -22,28 +22,28 @@ export const Dashboard: React.FC = () => {
             id: 'agritwin',
             title: t('app_agritwin_title', 'Agri-Twin'),
             desc: t('app_agritwin_desc', 'Risk-free farming simulator'),
-            icon: Box,
-            color: 'bg-blue-100 text-blue-600',
-            action: () => { }, // Placeholder
-            status: 'Coming Soon'
+            iconType: 'AGRITWIN' as const,
+            color: 'bg-blue-50 text-blue-600 border-blue-100',
+            action: () => navigate('/simulator'),
+            status: 'Active'
         },
         {
             id: 'bioprospector',
             title: t('app_bio_title', 'Bio-Prospector'),
             desc: t('app_bio_desc', 'Discover hidden value in weeds'),
-            icon: Sprout,
-            color: 'bg-purple-100 text-purple-600',
-            action: () => { }, // Placeholder
-            status: 'Coming Soon'
+            iconType: 'BIOPROSPECTOR' as const,
+            color: 'bg-purple-50 text-purple-600 border-purple-100',
+            action: () => navigate('/diagnosis'), // Integrated into Scanner
+            status: 'Active'
         },
         {
             id: 'market',
             title: t('app_market_title', 'Market Pulse'),
             desc: t('app_market_desc', 'Real-time prices & cooperative selling'),
-            icon: TrendingUp,
-            color: 'bg-orange-100 text-orange-600',
-            action: () => { }, // Placeholder
-            status: 'Coming Soon'
+            iconType: 'MARKET' as const,
+            color: 'bg-orange-50 text-orange-600 border-orange-100',
+            action: () => navigate('/market'),
+            status: 'Active'
         }
     ];
 
@@ -63,13 +63,13 @@ export const Dashboard: React.FC = () => {
                             key={app.id}
                             onClick={app.action}
                             className={`
-                                relative p-6 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer group
-                                ${app.status === 'Coming Soon' ? 'opacity-70 grayscale-[0.5]' : ''}
+                                relative p-6 rounded-2xl border bg-white shadow-sm hover:shadow-lg transition-all cursor-pointer group
+                                ${app.status === 'Coming Soon' ? 'opacity-70 grayscale-[0.5]' : 'border-gray-100 hover:border-green-300'}
                             `}
                         >
                             <div className="flex justify-between items-start mb-4">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${app.color}`}>
-                                    <app.icon className="w-6 h-6" />
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-inner ${app.color}`}>
+                                    <FeatureIcon type={app.iconType} className="w-8 h-8" />
                                 </div>
                                 {app.status === 'Coming Soon' && (
                                     <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">

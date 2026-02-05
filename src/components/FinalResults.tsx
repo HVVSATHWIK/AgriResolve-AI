@@ -11,6 +11,7 @@ import { projectAssessmentRisk } from '../lib/agroRisk';
 import { calibrateForAssessment } from '../lib/confidenceCalibration';
 import { fetchAgroWeather } from '../services/agroWeather';
 import { summarizeDailyWeather, type DailyAgroSummary } from '../lib/agroRisk';
+import { BioProspectorCard } from './BioProspectorCard';
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -529,6 +530,9 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom duration-700">
 
+      {/* 0. Bio-Prospector (Hidden Value) - High Priority Insight */}
+      <BioProspectorCard result={data.bioProspectorResult} />
+
       {/* 1. Image Overview & Quality */}
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xl overflow-hidden relative">
         <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
@@ -607,11 +611,11 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
 
                 const bboxPx = aiBox && sourceDims
                   ? {
-                      x: clamp01(aiBox.x) * sourceDims.w,
-                      y: clamp01(aiBox.y) * sourceDims.h,
-                      w: clamp01(aiBox.w) * sourceDims.w,
-                      h: clamp01(aiBox.h) * sourceDims.h,
-                    }
+                    x: clamp01(aiBox.x) * sourceDims.w,
+                    y: clamp01(aiBox.y) * sourceDims.h,
+                    w: clamp01(aiBox.w) * sourceDims.w,
+                    h: clamp01(aiBox.h) * sourceDims.h,
+                  }
                   : crop?.bbox;
 
                 if (!bboxPx) return null;
@@ -630,11 +634,10 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
                 return (
                   <div
                     key={`${label}-${index}`}
-                    className={`absolute rounded-lg transition-all ${
-                      isSelected
-                        ? 'shadow-[0_0_0_4px_rgba(255,255,255,0.25),0_0_0_1px_rgba(0,0,0,0.25)]'
-                        : 'opacity-95'
-                    } ${selectedLeafId ? 'cursor-pointer pointer-events-auto' : 'pointer-events-none'}`}
+                    className={`absolute rounded-lg transition-all ${isSelected
+                      ? 'shadow-[0_0_0_4px_rgba(255,255,255,0.25),0_0_0_1px_rgba(0,0,0,0.25)]'
+                      : 'opacity-95'
+                      } ${selectedLeafId ? 'cursor-pointer pointer-events-auto' : 'pointer-events-none'}`}
                     style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
                     onClick={() => setSelectedLeafId(label)}
                   >
@@ -827,11 +830,10 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
             </div>
 
             <div
-              className={`px-3 py-1 rounded-full text-xs font-bold border self-start md:self-auto ${
-                complianceHits.length === 0
-                  ? 'bg-green-50 text-green-700 border-green-200'
-                  : 'bg-red-50 text-red-700 border-red-200'
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-bold border self-start md:self-auto ${complianceHits.length === 0
+                ? 'bg-green-50 text-green-700 border-green-200'
+                : 'bg-red-50 text-red-700 border-red-200'
+                }`}
             >
               {complianceHits.length === 0
                 ? t('compliance_ok', { defaultValue: 'No red-flags detected' })
@@ -860,11 +862,10 @@ export const FinalResults: React.FC<FinalResultsProps> = ({ data, sourceImage, i
           data.leafAssessments.map((leaf, index) => (
             <div
               key={index}
-              className={`bg-white rounded-2xl p-6 border shadow-sm transition-all cursor-pointer ${
-                selectedLeafId === leaf.id
-                  ? 'border-green-400 shadow-md ring-4 ring-green-200/60'
-                  : 'border-gray-200 hover:shadow-md hover:border-gray-300'
-              }`}
+              className={`bg-white rounded-2xl p-6 border shadow-sm transition-all cursor-pointer ${selectedLeafId === leaf.id
+                ? 'border-green-400 shadow-md ring-4 ring-green-200/60'
+                : 'border-gray-200 hover:shadow-md hover:border-gray-300'
+                }`}
               onClick={() => setSelectedLeafId(leaf.id)}
             >
               <div className="flex justify-between items-start mb-4">
