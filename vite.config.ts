@@ -65,6 +65,7 @@ export default defineConfig(({ mode }) => {
           // Cache common static assets aggressively for field use.
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,glsl}'],
           navigateFallback: '/',
+          navigateFallbackDenylist: [/^\/api/],
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.destination === 'image',
