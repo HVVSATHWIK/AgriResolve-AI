@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useMobile } from '../hooks/useMobile';
 import { useTranslation } from 'react-i18next';
 import { Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
@@ -12,6 +13,8 @@ import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three
 // --- 3D Assets (Procedural) ---
 
 // --- High Fidelity Rendering Components ---
+
+// --- Multi-Layer Organic Rendering ---
 
 // --- Multi-Layer Organic Rendering ---
 
@@ -43,7 +46,7 @@ const RainSystem: React.FC<{ count: number, active: boolean }> = ({ count, activ
     return <points ref={ref} geometry={rainGeo} material={rainMat} />;
 };
 
-const FieldInstanceRenderer: React.FC<{ state: SimulationState }> = ({ state }) => {
+const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolean }> = ({ state, isMobile }) => {
     // Refs for 3 Layers
     const stemRef = useRef<THREE.InstancedMesh>(null);
     const foliageRef = useRef<THREE.InstancedMesh>(null);
@@ -54,12 +57,14 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState }> = ({ state }) 
     // Dynamic Density based on Crop Type
     const { COUNT, GRID_SIZE } = useMemo(() => {
         const type = state.crop.type;
-        // Rice/Wheat: Dense Field (4000 plants in 60m grid)
-        if (type === 'RICE' || type === 'WHEAT') return { COUNT: 4000, GRID_SIZE: 60 };
+        // Rice/Wheat: Dense Field (4000 plants in 60m grid) -> Reduced on Mobile
+        if (type === 'RICE' || type === 'WHEAT') {
+            return { COUNT: isMobile ? 1000 : 4000, GRID_SIZE: 60 };
+        }
 
-        // Others: Maximum Spacing (400 plants in 120m grid = ~6m spacing)
-        return { COUNT: 400, GRID_SIZE: 120 };
-    }, [state.crop.type]);
+        // Others: Maximum Spacing (400 plants in 120m grid = ~6m spacing) -> Reduced on Mobile
+        return { COUNT: isMobile ? 200 : 400, GRID_SIZE: 120 };
+    }, [state.crop.type, isMobile]);
 
     // --- Geometries for Layers ---
     const { stemGeo, foliageGeo, fruitGeo } = useMemo(() => {
@@ -168,7 +173,7 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState }> = ({ state }) 
             <Cloud position={[0, 20, 0]} opacity={isRaining ? 0.9 : 0.3} speed={0.2} color={isRaining ? "#444" : "#fff"} />
             <fogExp2 attach="fog" args={[isRaining ? '#111' : '#1a1a1a', isRaining ? 0.05 : 0.02]} />
 
-            <RainSystem count={2000} active={isRaining} />
+            <RainSystem count={isMobile ? 500 : 2000} active={isRaining} />
 
             <ambientLight intensity={isRaining ? 0.1 : 0.3} />
             <directionalLight
@@ -249,7 +254,50 @@ const ScoutCamera: React.FC = () => {
         camera.position.y = 1.7;
     });
 
-    return <PointerLockControls />;
+    // Touch Controls for Mobile
+    const isMobile = useMobile();
+
+    return (
+        <>
+            {!isMobile && <PointerLockControls />}
+            {isMobile && (
+                <div className="absolute bottom-20 right-4 z-50 flex flex-col gap-2 pointer-events-auto">
+                    <div className="flex justify-center">
+                        <button
+                            className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full active:bg-white/40 flex items-center justify-center border border-white/10 touch-none"
+                            onTouchStart={() => moveForward.current = true}
+                            onTouchEnd={() => moveForward.current = false}
+                        >
+                            <ChevronRight className="w-6 h-6 -rotate-90 text-white" />
+                        </button>
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full active:bg-white/40 flex items-center justify-center border border-white/10 touch-none"
+                            onTouchStart={() => moveLeft.current = true}
+                            onTouchEnd={() => moveLeft.current = false}
+                        >
+                            <ChevronRight className="w-6 h-6 rotate-180 text-white" />
+                        </button>
+                        <button
+                            className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full active:bg-white/40 flex items-center justify-center border border-white/10 touch-none"
+                            onTouchStart={() => moveBackward.current = true}
+                            onTouchEnd={() => moveBackward.current = false}
+                        >
+                            <ChevronRight className="w-6 h-6 rotate-90 text-white" />
+                        </button>
+                        <button
+                            className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full active:bg-white/40 flex items-center justify-center border border-white/10 touch-none"
+                            onTouchStart={() => moveRight.current = true}
+                            onTouchEnd={() => moveRight.current = false}
+                        >
+                            <ChevronRight className="w-6 h-6 text-white" />
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
+    );
 };
 
 const CameraController: React.FC<{ mode: 'ORBIT' | 'SCOUT' }> = ({ mode }) => {
@@ -284,7 +332,12 @@ export const Simulator: React.FC = () => {
     const [selectedCrop, setSelectedCrop] = useState<CropType>('RICE');
     const [cameraMode, setCameraMode] = useState<'ORBIT' | 'SCOUT'>('ORBIT');
     // Mobile Sidebar State
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const isMobile = useMobile();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+
+    useEffect(() => {
+        setIsSidebarOpen(!isMobile);
+    }, [isMobile]);
 
     // Auto-Run Effect
     useEffect(() => {
@@ -367,7 +420,7 @@ export const Simulator: React.FC = () => {
                         {(Object.keys(CROP_LIBRARY) as CropType[]).map(c => (
                             <button
                                 key={c}
-                                onClick={() => { setSelectedCrop(c); const e = new AgriTwinEngine(shc, c); setEngine(e); setSimState(e.state); if (window.innerWidth < 768) setIsSidebarOpen(false); }}
+                                onClick={() => { setSelectedCrop(c); const e = new AgriTwinEngine(shc, c); setEngine(e); setSimState(e.state); if (isMobile) setIsSidebarOpen(false); }}
                                 className={`p-2 rounded-lg text-xs font-bold transition-all border ${selectedCrop === c
                                     ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
                                     : 'bg-neutral-800 border-white/5 text-neutral-400 hover:bg-white/5'}`}
@@ -437,13 +490,13 @@ export const Simulator: React.FC = () => {
                     {/* Camera Modes */}
                     <div className="flex gap-2 mt-2">
                         <button
-                            onClick={() => { setCameraMode('ORBIT'); if (window.innerWidth < 768) setIsSidebarOpen(false); }}
+                            onClick={() => { setCameraMode('ORBIT'); if (isMobile) setIsSidebarOpen(false); }}
                             className={`flex-1 py-2 rounded-lg text-xs font-bold ${cameraMode === 'ORBIT' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400'}`}
                         >
                             GOD VIEW
                         </button>
                         <button
-                            onClick={() => { setCameraMode('SCOUT'); if (window.innerWidth < 768) setIsSidebarOpen(false); }}
+                            onClick={() => { setCameraMode('SCOUT'); if (isMobile) setIsSidebarOpen(false); }}
                             className={`flex-1 py-2 rounded-lg text-xs font-bold ${cameraMode === 'SCOUT' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400'}`}
                         >
                             SCOUT VIEW
@@ -497,8 +550,11 @@ export const Simulator: React.FC = () => {
                 </div>
 
                 {/* Controls Hint - Hidden on mobile to save space or reduced */}
-                <div className="hidden md:block absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded text-xs mt-2 text-center pointer-events-auto z-0">
-                    <b>SCOUT MODE:</b> Click to Focus • WASD to Move • ESC to Exit
+                <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded text-xs mt-2 text-center pointer-events-auto z-0">
+                    {isMobile ?
+                        <b>SCOUT MODE: Use On-Screen Controls</b> :
+                        <b>SCOUT MODE: Click to Focus • WASD to Move • ESC to Exit</b>
+                    }
                 </div>
 
 
@@ -507,7 +563,7 @@ export const Simulator: React.FC = () => {
                     <Canvas shadows camera={{ position: [20, 20, 20], fov: 50 }}>
                         <CameraController mode={cameraMode} />
                         <Environment preset="forest" background blur={0.6} />
-                        <FieldInstanceRenderer state={simState} />
+                        <FieldInstanceRenderer state={simState} isMobile={isMobile} />
                         <EffectComposer>
                             <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} radius={0.4} />
                             <Vignette eskil={false} offset={0.1} darkness={1.1} />
