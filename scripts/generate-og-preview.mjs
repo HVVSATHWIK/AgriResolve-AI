@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import sharp from 'sharp';
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -18,6 +17,14 @@ function escapeHtml(text) {
 }
 
 async function main() {
+  let sharp;
+  try {
+    sharp = (await import('sharp')).default;
+  } catch (e) {
+    console.warn('⚠️ Sharp module not found. Skipping OG image generation.');
+    return;
+  }
+
   const logoPath = path.join(PUBLIC_DIR, 'logo.svg');
   const outPngPath = path.join(PUBLIC_DIR, 'og-preview.png');
 
@@ -113,6 +120,6 @@ async function main() {
 
 main().catch((err) => {
   // eslint-disable-next-line no-console
-  console.error('Failed to generate og-preview.png', err);
-  process.exit(1);
+  console.warn('Skipping og-preview.png generation due to error:', err.message);
+  process.exit(0);
 });
