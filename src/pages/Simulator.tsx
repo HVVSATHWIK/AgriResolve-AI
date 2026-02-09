@@ -1,46 +1,273 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows } from '@react-three/drei';
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
+import { OrbitControls, Environment, Sky, ContactShadows, PointerLockControls, Stars, Cloud } from '@react-three/drei';
+import * as THREE from 'three';
+import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
 
 // --- 3D Components (Visuals) ---
-const Field3D: React.FC<{ state: SimulationState }> = ({ state }) => {
-    // Generate plants based on LAI/Density
-    const plantCount = Math.min(50, Math.floor(state.crop.lai * 10)); // simple visual scaling
+// --- 3D Assets (Procedural) ---
+
+// --- High Fidelity Rendering Components ---
+
+// --- Multi-Layer Organic Rendering ---
+
+const RainSystem: React.FC<{ count: number, active: boolean }> = ({ count, active }) => {
+    const rainGeo = useMemo(() => {
+        const geo = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        for (let i = 0; i < count * 3; i++) positions[i] = (Math.random() - 0.5) * 100;
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        return geo;
+    }, [count]);
+
+    const rainMat = useMemo(() => new THREE.PointsMaterial({
+        color: 0xaaaaaa, size: 0.1, transparent: true, opacity: 0.8
+    }), []);
+
+    const ref = useRef<THREE.Points>(null);
+    useFrame((_, delta) => {
+        if (!ref.current || !active) return;
+        const positions = ref.current.geometry.attributes.position.array as Float32Array;
+        for (let i = 1; i < count * 3; i += 3) {
+            positions[i] -= 20 * delta; // Fall speed
+            if (positions[i] < 0) positions[i] = 50; // Reset height
+        }
+        ref.current.geometry.attributes.position.needsUpdate = true;
+    });
+
+    if (!active) return null;
+    return <points ref={ref} geometry={rainGeo} material={rainMat} />;
+};
+
+const FieldInstanceRenderer: React.FC<{ state: SimulationState }> = ({ state }) => {
+    // Refs for 3 Layers
+    const stemRef = useRef<THREE.InstancedMesh>(null);
+    const foliageRef = useRef<THREE.InstancedMesh>(null);
+    const fruitRef = useRef<THREE.InstancedMesh>(null);
+
+    const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    // Dynamic Density based on Crop Type
+    const { COUNT, GRID_SIZE } = useMemo(() => {
+        const type = state.crop.type;
+        // Rice/Wheat: Dense Field (4000 plants in 60m grid)
+        if (type === 'RICE' || type === 'WHEAT') return { COUNT: 4000, GRID_SIZE: 60 };
+
+        // Others: Maximum Spacing (400 plants in 120m grid = ~6m spacing)
+        return { COUNT: 400, GRID_SIZE: 120 };
+    }, [state.crop.type]);
+
+    // --- Geometries for Layers ---
+    const { stemGeo, foliageGeo, fruitGeo } = useMemo(() => {
+        const type = state.crop.type;
+        let sGeo, fGeo, frGeo;
+
+        if (type === 'MAIZE') {
+            sGeo = new THREE.CylinderGeometry(0.04, 0.08, 1, 6); sGeo.translate(0, 0.5, 0);
+            fGeo = new THREE.PlaneGeometry(0.6, 0.15, 2, 2); fGeo.translate(0.3, 0.5, 0); // Leaf projecting out
+            frGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.3); frGeo.translate(0.1, 0.6, 0); // Corn cob
+        } else if (type === 'COTTON') {
+            sGeo = new THREE.CylinderGeometry(0.02, 0.03, 1, 5); sGeo.translate(0, 0.5, 0);
+            fGeo = new THREE.SphereGeometry(0.3, 4, 4); fGeo.translate(0, 0.5, 0); // Bush body
+            frGeo = new THREE.SphereGeometry(0.1, 4, 4); // Cotton boll
+        } else if (type === 'CHILLI') {
+            sGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.6, 5); sGeo.translate(0, 0.3, 0);
+            fGeo = new THREE.SphereGeometry(0.3, 4, 4); fGeo.translate(0, 0.4, 0);
+            frGeo = new THREE.ConeGeometry(0.03, 0.1, 4); frGeo.rotateX(Math.PI / 2); // Pepper
+        } else { // Rice/Wheat
+            sGeo = new THREE.BoxGeometry(0.02, 1, 0.02); sGeo.translate(0, 0.5, 0);
+            fGeo = new THREE.BoxGeometry(0.02, 0.8, 0.02); fGeo.rotateZ(0.2); fGeo.translate(0.1, 0.4, 0); // Extra blade
+            frGeo = new THREE.BoxGeometry(0.04, 0.2, 0.04); frGeo.translate(0, 0.9, 0); // Head
+        }
+        return { stemGeo: sGeo, foliageGeo: fGeo, fruitGeo: frGeo };
+    }, [state.crop.type]);
+
+    useFrame((state_gl) => {
+        const time = state_gl.clock.getElapsedTime();
+        const crop = state.crop;
+
+        let idx = 0;
+        for (let x = 0; x < Math.sqrt(COUNT); x++) {
+            for (let z = 0; z < Math.sqrt(COUNT); z++) {
+                const xPos = (x / Math.sqrt(COUNT)) * GRID_SIZE - GRID_SIZE / 2;
+                const zPos = (z / Math.sqrt(COUNT)) * GRID_SIZE - GRID_SIZE / 2;
+
+                // Wind
+                const wave = Math.sin(time * 1.5 + xPos * 0.3 + zPos * 0.3);
+                const windForce = wave * 0.1 * (crop.height / 100);
+
+                // --- STEM ---
+                dummy.position.set(xPos, 0, zPos);
+                dummy.rotation.set(windForce, (Math.random() - 0.5), windForce);
+                const h = Math.max(0.1, crop.height / 20);
+                dummy.scale.set(1, h, 1);
+                dummy.updateMatrix();
+                if (stemRef.current) stemRef.current.setMatrixAt(idx, dummy.matrix);
+
+                // --- FOLIAGE (Leaves flutter more) ---
+                dummy.rotation.set(windForce * 1.5, (Math.random() - 0.5), windForce * 1.5);
+                // Foliage grows wider
+                if (crop.type === 'COTTON' || crop.type === 'CHILLI') dummy.scale.set(h, h, h);
+                else dummy.scale.set(1, h, 1);
+                dummy.updateMatrix();
+                if (foliageRef.current) foliageRef.current.setMatrixAt(idx, dummy.matrix);
+
+                // --- FRUIT (Only if reproductive) ---
+                if (crop.dvs > 1.0) {
+                    dummy.rotation.set(windForce, (Math.random() - 0.5), windForce);
+                    dummy.scale.set(1, 1, 1); // Fruits don't stretch like stems
+                    dummy.updateMatrix();
+                    if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
+                } else {
+                    // Hide fruit if not ready
+                    dummy.scale.set(0, 0, 0);
+                    dummy.updateMatrix();
+                    if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
+                }
+                idx++;
+            }
+        }
+        if (stemRef.current) stemRef.current.instanceMatrix.needsUpdate = true;
+        if (foliageRef.current) foliageRef.current.instanceMatrix.needsUpdate = true;
+        if (fruitRef.current) fruitRef.current.instanceMatrix.needsUpdate = true;
+
+        // Color Updates
+        const baseColor = new THREE.Color("#4caf50"); // Stem Green
+        const foliageColor = new THREE.Color("#66bb6a"); // Leaf lighter
+        const fruitColor = new THREE.Color("#ffffff");
+
+        if (crop.type === 'COTTON' && crop.dvs > 1.2) fruitColor.set("#ffffff");
+        if (crop.type === 'CHILLI' && crop.dvs > 1.2) fruitColor.set("#d32f2f");
+        if (crop.type === 'WHEAT' && crop.dvs > 1.2) { baseColor.set("#eecfa1"); foliageColor.set("#dce775"); fruitColor.set("#ffecb3"); }
+
+        if (state.stress.water > 0.4) {
+            baseColor.lerp(new THREE.Color("#8d6e63"), 0.6);
+            foliageColor.lerp(new THREE.Color("#8d6e63"), 0.8); // Leaves die first
+        }
+
+        if (stemRef.current && stemRef.current.material instanceof THREE.MeshStandardMaterial) stemRef.current.material.color = baseColor;
+        if (foliageRef.current && foliageRef.current.material instanceof THREE.MeshStandardMaterial) foliageRef.current.material.color = foliageColor;
+        if (fruitRef.current && fruitRef.current.material instanceof THREE.MeshStandardMaterial) fruitRef.current.material.color = fruitColor;
+    });
+
+    const isRaining = state.weather.rain > 5;
 
     return (
         <group>
-            <Sky sunPosition={[100, 20, 100]} />
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} intensity={1} shadow-mapSize={[2048, 2048]} castShadow />
+            {/* Dynamic Environment */}
+            <Sky
+                sunPosition={[100, 20 + Math.sin(state.day * 0.1) * 20, 100]} // Sun moves nicely
+                turbidity={isRaining ? 20 : 10}
+                rayleigh={isRaining ? 0.5 : 2}
+            />
+            <Stars fade />
+            <Cloud position={[0, 20, 0]} opacity={isRaining ? 0.9 : 0.3} speed={0.2} color={isRaining ? "#444" : "#fff"} />
+            <fogExp2 attach="fog" args={[isRaining ? '#111' : '#1a1a1a', isRaining ? 0.05 : 0.02]} />
 
-            {/* Ground */}
+            <RainSystem count={2000} active={isRaining} />
+
+            <ambientLight intensity={isRaining ? 0.1 : 0.3} />
+            <directionalLight
+                position={[50, 50, 25]}
+                intensity={isRaining ? 0.5 : 2}
+                castShadow
+                shadow-mapSize={[2048, 2048]}
+            />
+
+            {/* Texture Ground - Infinite Look */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color="#5d4037" roughness={1} />
+                <planeGeometry args={[1000, 1000, 32, 32]} />
+                <meshStandardMaterial color={isRaining ? "#281912" : "#3e2723"} roughness={0.9} />
             </mesh>
 
-            {/* Crops (Instanced would be better for perf, but simple map for now) */}
-            {Array.from({ length: plantCount }).map((_, i) => {
-                const x = (i % 7) * 0.8 - 2.5;
-                const z = Math.floor(i / 7) * 0.8 - 2.5;
-                const height = state.crop.height / 20; // Scale down for visual
-                const color = state.stress.nitrogen > 0.3 ? "#d4e157" : (state.stress.water > 0.3 ? "#8d6e63" : "#4caf50");
-
-                return (
-                    <mesh key={i} position={[x, height / 2, z]} castShadow>
-                        <boxGeometry args={[0.2, height, 0.2]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-                );
-            })}
-
-            <ContactShadows resolution={1024} scale={50} blur={2} opacity={0.5} far={10} color="#000000" />
+            <instancedMesh ref={stemRef} args={[stemGeo, undefined, COUNT]} castShadow receiveShadow>
+                <meshStandardMaterial />
+            </instancedMesh>
+            <instancedMesh ref={foliageRef} args={[foliageGeo, undefined, COUNT]} castShadow receiveShadow>
+                <meshStandardMaterial side={THREE.DoubleSide} />
+            </instancedMesh>
+            <instancedMesh ref={fruitRef} args={[fruitGeo, undefined, COUNT]} castShadow receiveShadow>
+                <meshStandardMaterial />
+            </instancedMesh>
         </group>
     );
+};
+
+// --- SCout Mode (WASD Movement) ---
+const ScoutCamera: React.FC = () => {
+    const { camera } = useThree();
+    const moveForward = useRef(false);
+    const moveBackward = useRef(false);
+    const moveLeft = useRef(false);
+    const moveRight = useRef(false);
+    const velocity = useRef(new THREE.Vector3());
+    const direction = useRef(new THREE.Vector3());
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward.current = true; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft.current = true; break;
+                case 'ArrowDown': case 'KeyS': moveBackward.current = true; break;
+                case 'ArrowRight': case 'KeyD': moveRight.current = true; break;
+            }
+        };
+        const onKeyUp = (event: KeyboardEvent) => {
+            switch (event.code) {
+                case 'ArrowUp': case 'KeyW': moveForward.current = false; break;
+                case 'ArrowLeft': case 'KeyA': moveLeft.current = false; break;
+                case 'ArrowDown': case 'KeyS': moveBackward.current = false; break;
+                case 'ArrowRight': case 'KeyD': moveRight.current = false; break;
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            document.removeEventListener('keyup', onKeyUp);
+        };
+    }, []);
+
+    useFrame((_, delta) => {
+        if (!moveForward.current && !moveBackward.current && !moveLeft.current && !moveRight.current) return;
+
+        // Speed settings
+        const speed = 10.0 * delta;
+
+        direction.current.z = Number(moveForward.current) - Number(moveBackward.current);
+        direction.current.x = Number(moveRight.current) - Number(moveLeft.current);
+        direction.current.normalize(); // consistent speed in all directions
+
+        if (moveForward.current || moveBackward.current) camera.translateZ(direction.current.z * speed);
+        if (moveLeft.current || moveRight.current) camera.translateX(direction.current.x * speed);
+
+        // Keep height fixed (Walk on ground)
+        camera.position.y = 1.7;
+    });
+
+    return <PointerLockControls />;
+};
+
+const CameraController: React.FC<{ mode: 'ORBIT' | 'SCOUT' }> = ({ mode }) => {
+    const { camera } = useThree();
+
+    useEffect(() => {
+        if (mode === 'SCOUT') {
+            camera.position.set(0, 1.7, 5); // Start at edge
+            camera.lookAt(0, 1.7, 0);
+        } else {
+            camera.position.set(20, 20, 20);
+            camera.lookAt(0, 0, 0);
+        }
+    }, [mode, camera]);
+
+    return mode === 'ORBIT' ?
+        <OrbitControls enableDamping dampingFactor={0.05} /> :
+        <ScoutCamera />;
 };
 
 // --- Main Interface ---
@@ -55,6 +282,7 @@ export const Simulator: React.FC = () => {
     const [simState, setSimState] = useState<SimulationState>(engine.state);
     const [isPlaying, setIsPlaying] = useState(false);
     const [selectedCrop, setSelectedCrop] = useState<CropType>('RICE');
+    const [cameraMode, setCameraMode] = useState<'ORBIT' | 'SCOUT'>('ORBIT');
 
     // Auto-Run Effect
     useEffect(() => {
@@ -64,15 +292,25 @@ export const Simulator: React.FC = () => {
                 const newState = engine.nextDay({});
                 setSimState(newState);
                 if (newState.crop.dvs >= 2.0 || newState.crop.health <= 0) setIsPlaying(false);
-            }, 500); // 500ms per day
+            }, 500); // Slower day cycle for weather observation
         }
         return () => clearInterval(interval);
     }, [isPlaying, engine]);
 
-    const handleAction = (type: 'IRRIGATE' | 'FERTILIZE') => {
+    const handleAction = (type: 'IRRIGATE' | 'FERTILIZE' | 'WEED' | 'HARVEST') => {
         const newState = engine.nextDay(
-            type === 'IRRIGATE' ? { irrigate: 20 } : { fertilize_n: 15 }
+            type === 'IRRIGATE' ? { irrigate: 20 } :
+                type === 'FERTILIZE' ? { fertilize_n: 15 } :
+                    type === 'WEED' ? { weed: true } :
+                        { harvest: true, newCrop: selectedCrop === 'RICE' ? 'WHEAT' : 'RICE' } // Toggles for demo
         );
+
+        // Auto switch selected crop if harvested
+        if (type === 'HARVEST') {
+            setSelectedCrop(selectedCrop === 'RICE' ? 'WHEAT' : 'RICE');
+            setIsPlaying(false); // Pause after harvest
+        }
+
         setSimState(newState);
     };
 
@@ -145,6 +383,14 @@ export const Simulator: React.FC = () => {
                             <Sprout className="w-5 h-5" />
                             <span className="font-bold text-sm">{t('sim_fertilize', 'Fertilize')}</span>
                         </button>
+                        <button onClick={() => handleAction('WEED')} className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                            <Wind className="w-5 h-5" />
+                            <span className="font-bold text-sm">De-Weed</span>
+                        </button>
+                        <button onClick={() => handleAction('HARVEST')} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                            <ChevronRight className="w-5 h-5" />
+                            <span className="font-bold text-sm">Harvest (Rotate)</span>
+                        </button>
                     </div>
 
                     <div className="flex gap-2">
@@ -153,10 +399,26 @@ export const Simulator: React.FC = () => {
                             className={`flex-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-black transition-all ${isPlaying ? 'bg-amber-400 hover:bg-amber-500' : 'bg-emerald-400 hover:bg-emerald-500'}`}
                         >
                             {isPlaying ? <Pause className="fill-current w-4 h-4" /> : <Play className="fill-current w-4 h-4" />}
-                            {isPlaying ? "Pause" : "Start Simulation"}
+                            {isPlaying ? "Pause" : "Start"}
                         </button>
                         <button onClick={reset} className="p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all">
                             <RefreshCw className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Camera Modes */}
+                    <div className="flex gap-2 mt-2">
+                        <button
+                            onClick={() => setCameraMode('ORBIT')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold ${cameraMode === 'ORBIT' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400'}`}
+                        >
+                            GOD VIEW
+                        </button>
+                        <button
+                            onClick={() => setCameraMode('SCOUT')}
+                            className={`flex-1 py-2 rounded-lg text-xs font-bold ${cameraMode === 'SCOUT' ? 'bg-white text-black' : 'bg-white/5 text-neutral-400'}`}
+                        >
+                            SCOUT VIEW
                         </button>
                     </div>
                 </div>
@@ -176,6 +438,13 @@ export const Simulator: React.FC = () => {
                             <div className="text-xs text-neutral-400 uppercase font-bold">Yield Forecast</div>
                             <div className="text-3xl font-black font-mono text-cyan-400">{Math.floor(simState.yield_forecast)} <span className="text-sm text-neutral-500 font-sans">kg/ha</span></div>
                         </div>
+                        {simState.crop.weed_density > 0.1 && (
+                            <div className="bg-red-900/40 backdrop-blur-md p-4 rounded-2xl border border-red-500/30 text-white animate-pulse">
+                                <div className="text-xs text-red-300 uppercase font-bold">Weed Infestation</div>
+                                <div className="text-2xl font-black font-mono text-red-400">{Math.floor(simState.crop.weed_density * 100)}%</div>
+                                <div className="text-xs text-red-300 mt-1">Competition High</div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10 text-white min-w-[200px]">
@@ -191,20 +460,29 @@ export const Simulator: React.FC = () => {
                                 <span>Humidity</span>
                                 <span>{simState.weather.rain > 0 ? '90%' : '45%'}</span>
                             </div>
-                            <div className="flex justify-between text-blue-400">
-                                <span>Rain</span>
-                                <span>{Math.floor(simState.weather.rain)}mm</span>
-                            </div>
+                            <span>Rain</span>
+                            <span>{Math.floor(simState.weather.rain)}mm</span>
                         </div>
                     </div>
                 </div>
+                {/* Controls Hint */}
+                <div className="bg-black/80 text-white px-3 py-1 rounded text-xs mt-2 text-center pointer-events-auto">
+                    <b>SCOUT MODE:</b> Click to Focus • WASD to Move • ESC to Exit
+                </div>
+
 
                 {/* 3D Canvas */}
                 <div className="w-full h-full">
-                    <Canvas shadows camera={{ position: [5, 5, 5], fov: 50 }}>
-                        <OrbitControls />
-                        <Environment preset="sunset" />
-                        <Field3D state={simState} />
+                    <Canvas shadows camera={{ position: [20, 20, 20], fov: 50 }}>
+                        <CameraController mode={cameraMode} />
+                        <Environment preset="forest" background blur={0.6} />
+                        <FieldInstanceRenderer state={simState} />
+                        <EffectComposer>
+                            <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} radius={0.4} />
+                            <Vignette eskil={false} offset={0.1} darkness={1.1} />
+                            <TiltShift2 blur={0.2} />
+                            <Noise opacity={0.02} />
+                        </EffectComposer>
                     </Canvas>
                 </div>
 
@@ -218,7 +496,7 @@ export const Simulator: React.FC = () => {
                         ))}
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };

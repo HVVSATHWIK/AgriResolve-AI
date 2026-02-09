@@ -36,11 +36,16 @@ export interface SimulationState {
         name: string;
         variety: string;
         dvs: number; // 0.0 to 2.0 (Development Stage)
-        biomass: number; // kg/ha
+        biomass: number; // kg/ha (Total living)
+        biomass_leaf: number;
+        biomass_stem: number;
+        biomass_storage: number; // Grain/Fruit (Yield)
+        biomass_root: number;
         lai: number; // Leaf Area Index
         height: number; // cm
         roots: number; // Root depth (cm)
         health: number; // 0-100%
+        weed_density: number; // 0.0 (none) to 1.0 (overrun)
     };
 
     soil: {
