@@ -9,24 +9,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       host: '0.0.0.0',
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
     },
     preview: {
       port: 3000,
       host: '0.0.0.0',
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3001',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
     },
     plugins: [
       react(),
@@ -65,7 +51,6 @@ export default defineConfig(({ mode }) => {
           // Cache common static assets aggressively for field use.
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,glsl}'],
           navigateFallback: '/',
-          navigateFallbackDenylist: [/^\/api/],
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.destination === 'image',

@@ -1,57 +1,19 @@
 /**
- * API Client for Backend Proxy
+ * API Client for Direct Client-Side Gemini Access
  * 
- * Handles all communication with the backend API proxy
- * Feature: agricultural-accuracy-and-security-fixes
- * Requirements: 5.1, 5.2, 7.1
+ * SIMPLIFIED IMPLEMENTATION: DIRECT API CALLS
+ * Feature: client-side-simplicity
  */
 
+import { GoogleGenAI } from '@google/genai';
+
 /**
- * API response structure from backend
+ * API response structure (kept compatible with existing frontend code)
  */
 export interface ApiResponse<T = unknown> {
   success: boolean;
   result: T;
-  rateLimitInfo?: {
-    quotaRemaining: number;
-    quotaUsed: number;
-    resetTime: string;
-  };
-  degraded?: boolean;
-  limitations?: string[];
-  serviceErrors?: Array<{
-    service: string;
-    available: boolean;
-    message: string;
-    retryable: boolean;
-    retryAfter?: number;
-  }>;
-  manualWeatherUsed?: boolean;
   timestamp: string;
-}
-
-/**
- * API error response structure
- */
-export interface ApiError {
-  error: string;
-  code: string;
-  message: string;
-  timestamp: string;
-  retryable?: boolean;
-  retryAfter?: number;
-  serviceErrors?: Array<{
-    service: string;
-    available: boolean;
-    message: string;
-  }>;
-  affectedFeatures?: string[];
-  rateLimitInfo?: {
-    limit: number;
-    remaining: number;
-    resetTime: string;
-    retryAfter: number;
-  };
 }
 
 /**
@@ -68,171 +30,88 @@ export interface AnalysisRequest {
   };
 }
 
-/**
- * Base API URL - defaults to same origin in production
- */
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Initialize Gemini Client
+const apiKey = import.meta.env.VITE_GEMINI_API_TOKEN;
+const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 /**
- * Call the backend analysis endpoint
- * Requirement 5.1: Use backend proxy instead of direct Gemini API calls
- * Requirement 5.2: Never expose API keys in frontend
+ * Call Gemini API directly from the client
  */
 export async function callAnalysisAPI<T = unknown>(
   request: AnalysisRequest
 ): Promise<ApiResponse<T>> {
+
+  if (!genAI) {
+    throw new Error('VITE_GEMINI_API_TOKEN is missing. Please add it to your Environment Variables.');
+  }
+
   try {
-    const response = await fetch(`${API_BASE_URL}/analysis`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Include session cookie
-      body: JSON.stringify(request),
+    // Select model based on task
+    const modelId = request.taskType === 'VISION_FAST' ? 'gemini-2.0-flash' : 'gemini-2.0-flash';
+
+    // Prepare contents
+    const parts: any[] = [{ text: request.prompt }];
+
+    if (request.image) {
+      // Remove data:image/...;base64, prefix if present for the SDK
+      const base64Data = request.image.includes(',')
+        ? request.image.split(',')[1]
+        : request.image;
+
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: base64Data
+        }
+      });
+    }
+
+    // Call the API using the correct SDK method
+    // @google/genai v0.0.x / v1.x pattern
+    const response = await genAI.models.generateContent({
+      model: modelId,
+      contents: [{ parts }],
+      config: {
+        maxOutputTokens: 1400,
+        temperature: 0.2
+      }
     });
 
-    const data = await response.json();
+    let text = response.text || '';
 
-    // Handle rate limiting
-    // Requirement 7.1: Handle rate limit responses from backend
-    if (response.status === 429) {
-      const error: ApiError = data;
-      throw new RateLimitError(
-        error.message,
-        error.rateLimitInfo?.retryAfter || 300,
-        error.rateLimitInfo?.resetTime || new Date(Date.now() + 300000).toISOString()
-      );
+    // Clean up JSON if requested
+    if (request.taskType === 'GENERATE_JSON') {
+      text = text.replace(/```json\n?|\n?```/g, '').trim();
     }
 
-    // Handle service unavailability
-    if (response.status === 503) {
-      const error: ApiError = data;
-      throw new ServiceUnavailableError(
-        error.message,
-        error.serviceErrors || [],
-        error.affectedFeatures || [],
-        error.retryable || false,
-        error.retryAfter
-      );
+    // Attempt to parse JSON result if the generic T implies it, or just return text
+    let parsedResult: any = text;
+    try {
+      if (request.taskType === 'GENERATE_JSON' || (text.startsWith('{') && text.endsWith('}'))) {
+        parsedResult = JSON.parse(text);
+      }
+    } catch (e) {
+      // failed to parse, keep as text
     }
 
-    // Handle other errors
-    if (!response.ok) {
-      const error: ApiError = data;
-      throw new ApiClientError(
-        error.message || 'API request failed',
-        response.status,
-        error.code,
-        error.retryable || false
-      );
-    }
+    return {
+      success: true,
+      result: parsedResult as T,
+      timestamp: new Date().toISOString()
+    };
 
-    return data as ApiResponse<T>;
-  } catch (error) {
-    // Re-throw custom errors
-    if (error instanceof ApiClientError) {
-      throw error;
-    }
-
-    // Network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new NetworkError('Unable to connect to server. Please check your internet connection.');
-    }
-
-    // Unknown errors
-    throw new ApiClientError(
-      error instanceof Error ? error.message : 'An unexpected error occurred',
-      0,
-      'UNKNOWN_ERROR',
-      false
-    );
+  } catch (error: any) {
+    console.error('Gemini API Error:', error);
+    throw new Error(error.message || 'Failed to connect to Gemini API');
   }
 }
 
 /**
- * Check API health
+ * Mock health checks since we have no backend
  */
-export async function checkAPIHealth(): Promise<{
-  status: string;
-  services: {
-    gemini: { available: boolean; message: string };
-    weather: { available: boolean; message: string };
-  };
-}> {
-  const response = await fetch(`${API_BASE_URL}/health`, {
-    method: 'GET',
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('Health check failed');
-  }
-
-  return response.json();
+export async function checkAPIHealth(): Promise<{ status: string }> {
+  return { status: 'healthy' };
 }
-
-/**
- * Check specific service health
- */
-export async function checkServiceHealth(service: 'gemini' | 'weather'): Promise<{
-  service: string;
-  available: boolean;
-  message: string;
-}> {
-  const response = await fetch(`${API_BASE_URL}/health/${service}`, {
-    method: 'GET',
-    credentials: 'include',
-  });
-
-  return response.json();
-}
-
-/**
- * Custom error classes
- */
-export class ApiClientError extends Error {
-  constructor(
-    message: string,
-    public statusCode: number,
-    public code: string,
-    public retryable: boolean
-  ) {
-    super(message);
-    this.name = 'ApiClientError';
-  }
-}
-
-export class RateLimitError extends ApiClientError {
-  constructor(
-    message: string,
-    public retryAfter: number,
-    public resetTime: string
-  ) {
-    super(message, 429, 'RATE_LIMIT_EXCEEDED', true);
-    this.name = 'RateLimitError';
-  }
-}
-
-export class ServiceUnavailableError extends ApiClientError {
-  constructor(
-    message: string,
-    public serviceErrors: Array<{
-      service: string;
-      available: boolean;
-      message: string;
-    }>,
-    public affectedFeatures: string[],
-    retryable: boolean,
-    public retryAfter?: number
-  ) {
-    super(message, 503, 'SERVICE_UNAVAILABLE', retryable);
-    this.name = 'ServiceUnavailableError';
-  }
-}
-
-export class NetworkError extends ApiClientError {
-  constructor(message: string) {
-    super(message, 0, 'NETWORK_ERROR', true);
-    this.name = 'NetworkError';
-  }
+export async function checkServiceHealth(service: string): Promise<any> {
+  return { service, available: true, message: 'Client-side only' };
 }
