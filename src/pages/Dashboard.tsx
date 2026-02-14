@@ -107,13 +107,13 @@ export const Dashboard: React.FC = () => {
                         key={app.id}
                         onClick={app.action}
                         className={`
-                            relative rounded - [2rem] border transition - all duration - 200 cursor - pointer group flex flex - col justify - between overflow - hidden
+                            relative rounded-[2rem] border transition-all duration-200 cursor-pointer group flex flex-col justify-between overflow-hidden
                             ${app.isFlagship
                                 ? 'md:col-span-2 lg:col-span-2 bg-gradient-to-br from-[#064e3b] to-[#047857] border-emerald-800 shadow-xl' // High contrast Green
                                 : 'bg-white border-emerald-100 shadow-sm hover:shadow-xl hover:border-emerald-400'
                             }
-active: scale - [0.98] // Tactile feedback
-    `}
+                            active:scale-[0.98] // Tactile feedback
+                        `}
                     >
                         {/* Touch Target Expansion */}
                         <div className="absolute inset-0 z-0" aria-hidden="true"></div>
@@ -122,15 +122,15 @@ active: scale - [0.98] // Tactile feedback
                             {/* Header */}
                             <div className="flex justify-between items-start mb-4">
                                 <div className={`
-p - 3 rounded - xl flex items - center justify - center shadow - md
+                                    p-3 rounded-xl flex items-center justify-center shadow-md
                                     ${app.isFlagship ? 'bg-emerald-900/50 text-white ring-1 ring-white/20' : 'bg-emerald-50 text-emerald-700'}
-`}>
+                                `}>
                                     <app.icon className="w-6 h-6" />
                                 </div>
 
                                 {/* Live Data Pills (Only if real data exists) */}
                                 {app.data && (
-                                    <div className={`px - 3 py - 1 rounded - full text - xs font - bold border backdrop - blur - sm ${app.isFlagship ? 'bg-emerald-900/30 text-emerald-100 border-emerald-500/30' : 'bg-gray-50 text-gray-600 border-gray-200'} `}>
+                                    <div className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-sm ${app.isFlagship ? 'bg-emerald-900/30 text-emerald-100 border-emerald-500/30' : 'bg-gray-50 text-gray-600 border-gray-200'} `}>
                                         <span className="opacity-70 mr-1">{app.data.label}:</span>
                                         {app.data.value}
                                     </div>
@@ -145,10 +145,10 @@ p - 3 rounded - xl flex items - center justify - center shadow - md
 
                             {/* Content */}
                             <div className="flex-1 mb-6">
-                                <h3 className={`font - black tracking - tight mb - 1 ${app.isFlagship ? 'text-3xl text-white' : 'text-xl text-gray-900 group-hover:text-emerald-900'} `}>
+                                <h3 className={`font-black tracking-tight mb-1 ${app.isFlagship ? 'text-3xl text-white' : 'text-xl text-gray-900 group-hover:text-emerald-900'} `}>
                                     {app.title}
                                 </h3>
-                                <p className={`font - medium ${app.isFlagship ? 'text-emerald-100/80 text-lg' : 'text-gray-500 text-sm'} `}>
+                                <p className={`font-medium ${app.isFlagship ? 'text-emerald-100/80 text-lg' : 'text-gray-500 text-sm'} `}>
                                     {app.desc}
                                 </p>
                             </div>
@@ -156,14 +156,14 @@ p - 3 rounded - xl flex items - center justify - center shadow - md
                             {/* Massive CTA for Field Use */}
                             {app.status === 'Active' && (
                                 <button className={`
-w - full py - 4 px - 6 rounded - xl font - black text - sm uppercase tracking - wider flex items - center justify - between transition - colors
+                                    w-full py-4 px-6 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-between transition-colors
                                     ${app.isFlagship
                                         ? 'bg-amber-400 hover:bg-amber-300 text-emerald-950 shadow-lg'
                                         : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-transparent hover:border-emerald-200'
                                     }
-`}>
+                                `}>
                                     {app.actionLabel}
-                                    <ArrowRight className={`w - 5 h - 5 ${app.isFlagship ? 'stroke-[3px]' : ''} `} />
+                                    <ArrowRight className={`w-5 h-5 ${app.isFlagship ? 'stroke-[3px]' : ''} `} />
                                 </button>
                             )}
                         </div>
