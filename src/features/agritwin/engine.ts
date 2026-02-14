@@ -100,8 +100,10 @@ export class AgriTwinEngine {
         }
     }
 
-    private simulateHydrology(irrigation: number) {
-        const crop = CROP_LIBRARY[this.state.crop.type];
+    private simulateHydrology(irrigationInput: number) {
+        // SIM-003: Clamping inputs
+        const irrigation = Math.max(0, Math.min(irrigationInput, 1000)); // Max 1000mm at once
+
         const ET0 = 5; // Reference Evapotranspiration (mm/day) - approximated
         const Kc = 0.4 + (this.state.crop.lai / 3); // Crop Coefficient increases with canopy
         const ETc = ET0 * Math.min(Kc, 1.2);
@@ -127,7 +129,10 @@ export class AgriTwinEngine {
         if (irrigation > 0) this.log(`Irrigated ${irrigation}mm.`);
     }
 
-    private simulateNutrients(fertilizer: number) {
+    private simulateNutrients(fertilizerInput: number) {
+        // SIM-003: Clamping inputs
+        const fertilizer = Math.max(0, Math.min(fertilizerInput, 500)); // Max 500kg N at once
+
         // Mineralization (Soil releases N slowly)
         const mineralization = 0.5; // kg/ha/day
 
@@ -136,7 +141,7 @@ export class AgriTwinEngine {
 
         // Balance
         this.state.soil.n_pool += (fertilizer + mineralization) - uptakeDemand;
-        this.state.soil.n_pool = Math.max(0, this.state.soil.n_pool);
+        this.state.soil.n_pool = Math.max(0, this.state.soil.n_pool); // Prevent negative soil N
 
         // Stress
         if (this.state.soil.n_pool < 20) {

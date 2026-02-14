@@ -1,7 +1,7 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sky, ContactShadows, Float } from '@react-three/drei';
-import { SimulationState, CropType, CROP_DATA } from './SimulationEngine';
+import { OrbitControls, Sky, ContactShadows } from '@react-three/drei';
+import { SimulationState, CROP_DATA } from './SimulationEngine';
 import * as THREE from 'three';
 
 interface SimulationCanvasProps {
@@ -10,7 +10,7 @@ interface SimulationCanvasProps {
 
 // --- Procedural Plant Components ---
 
-const WheatRicePlant: React.FC<{ type: 'WHEAT' | 'RICE'; stage: string; health: number }> = ({ type, stage, health }) => {
+const WheatRicePlant: React.FC<{ type: 'WHEAT' | 'RICE'; stage: string; health: number }> = ({ type, stage, health: _health }) => {
     const isHarvest = stage === 'HARVEST';
     const color = type === 'WHEAT'
         ? (isHarvest ? '#eab308' : '#84cc16')
@@ -183,7 +183,7 @@ const Plant: React.FC<{ state: SimulationState }> = ({ state }) => {
             {/* Categorized Rendering */}
             {(cropType === 'WHEAT' || cropType === 'RICE') && <WheatRicePlant type={cropType} stage={stage} health={health} />}
             {(cropType === 'MAIZE' || cropType === 'SUGARCANE') && <StalkPlant type={cropType} stage={stage} />}
-            {['COTTON', 'TOMATO', 'MUSTARD', 'POTATO', 'SOYBEAN'].includes(cropType) && <BushPlant type={cropType as any} stage={stage} />}
+            {['COTTON', 'TOMATO', 'MUSTARD', 'POTATO', 'SOYBEAN'].includes(cropType) && <BushPlant type={cropType as any} stage={stage} />} {/* eslint-disable-line @typescript-eslint/no-explicit-any */}
         </group>
     );
 };

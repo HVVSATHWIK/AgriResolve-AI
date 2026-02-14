@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { fetchCropCalendar, fetchDiseaseAlerts, type CropCalendarEvent, type DiseaseAlert } from '../services/insights';
-import { AlertTriangle, Calendar } from 'lucide-react';
+import { fetchCropCalendar, type CropCalendarEvent } from '../services/insights';
+import { Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
 export const InsightsDashboard: React.FC<Props> = ({ locationName }) => {
     const { t, i18n } = useTranslation();
     const [calendar, setCalendar] = useState<CropCalendarEvent[]>([]);
-    const [alerts, setAlerts] = useState<DiseaseAlert[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -18,9 +17,6 @@ export const InsightsDashboard: React.FC<Props> = ({ locationName }) => {
 
         const load = async () => {
             setLoading(true);
-            const _alerts = fetchDiseaseAlerts(locationName);
-            setAlerts(_alerts);
-
             const _calendar = await fetchCropCalendar(locationName, i18n.language);
             setCalendar(_calendar);
             setLoading(false);
@@ -41,43 +37,24 @@ export const InsightsDashboard: React.FC<Props> = ({ locationName }) => {
         return raw;
     };
 
-    const riskBadgeLabel = (severity: DiseaseAlert['severity']) => {
-        const levelKey = severity === 'High' ? 'risk_high' : severity === 'Medium' ? 'risk_medium' : 'risk_low';
-        const level = t(levelKey, { defaultValue: severity });
-        return t('risk_badge', { defaultValue: `${severity} Risk`, level });
-    };
+
 
     return (
         <div className="space-y-4 animate-in fade-in duration-500">
-            {/* Disease Alerts Ticker */}
-            {alerts.length > 0 && (
-                <div className="bg-red-50 border border-red-100 rounded-xl p-3 overflow-hidden relative">
-                    <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-4 h-4 text-red-600 animate-pulse" />
-                        <span className="text-xs font-bold text-red-800 uppercase tracking-wider">{t('community_alerts', { defaultValue: 'Community Alerts' })}</span>
-                    </div>
-                    <div className="space-y-2">
-                        {alerts.map(alert => (
-                            <div key={alert.id} className="flex items-center justify-between text-xs bg-white/50 p-2 rounded-lg">
-                                <span className="font-semibold text-gray-800">{alert.disease}</span>
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${alert.severity === 'High' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                                    }`}>
-                                    {riskBadgeLabel(alert.severity)}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="text-[10px] text-red-400 mt-1 text-right">
-                        {t('reported_in', { defaultValue: 'Reported in {{location}}', location: locationName })}
-                    </div>
-                </div>
-            )}
+            {/* Disease Alerts Ticker REMOVED - Violation of Reality Rule */}
 
-            {/* Crop Calendar */}
-            <div className="bg-green-50/50 border border-green-100 rounded-xl p-3">
-                <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-green-700" />
-                    <span className="text-xs font-bold text-green-800 uppercase tracking-wider">{t('seasonal_planner', { defaultValue: 'Seasonal Planner' })}</span>
+            {/* Crop Calendar - Now the primary insight */}
+            <div className="bg-white border border-emerald-100 rounded-xl p-0 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between p-3 bg-emerald-50/50 border-b border-emerald-100">
+                    <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-emerald-700" />
+                        <span className="text-xs font-bold text-emerald-900 uppercase tracking-wider">{t('seasonal_planner', { defaultValue: 'Seasonal Planner' })}</span>
+                    </div>
+                    {locationName && (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-white px-2 py-0.5 rounded-full border border-emerald-100 shadow-sm">
+                            {locationName}
+                        </span>
+                    )}
                 </div>
 
                 {loading ? (

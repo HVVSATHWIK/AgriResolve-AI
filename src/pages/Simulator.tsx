@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows, PointerLockControls, Stars, Cloud } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Environment, Sky, PointerLockControls, Stars, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
 
@@ -209,7 +209,6 @@ const ScoutCamera: React.FC = () => {
     const moveBackward = useRef(false);
     const moveLeft = useRef(false);
     const moveRight = useRef(false);
-    const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
 
     useEffect(() => {
@@ -341,7 +340,7 @@ export const Simulator: React.FC = () => {
 
     // Auto-Run Effect
     useEffect(() => {
-        let interval: any;
+        let interval: NodeJS.Timeout;
         if (isPlaying) {
             interval = setInterval(() => {
                 const newState = engine.nextDay({});
@@ -359,6 +358,9 @@ export const Simulator: React.FC = () => {
                     type === 'WEED' ? { weed: true } :
                         { harvest: true, newCrop: selectedCrop === 'RICE' ? 'WHEAT' : 'RICE' } // Toggles for demo
         );
+
+        // SIM-001: Pause auto-play on manual interaction to avoid confusion state jumps
+        if (isPlaying) setIsPlaying(false);
 
         // Auto switch selected crop if harvested
         if (type === 'HARVEST') {

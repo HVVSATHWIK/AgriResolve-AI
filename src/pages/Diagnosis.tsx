@@ -73,23 +73,27 @@ export const Diagnosis: React.FC = () => {
     const isBioProspector = mode === 'bioprospector';
 
     // Dynamic Theme Colors
+    // Dynamic Theme Colors - Premium "AgriResolve" Palette
     const theme = isBioProspector ? {
-        primary: 'purple',
-        accent: 'amber',
-        gradient: 'from-purple-600 to-indigo-700',
-        bgGradient: 'from-purple-50 to-indigo-50',
-        iconBg: 'bg-purple-50 text-purple-600',
-        uploadGradient: 'from-purple-500 via-indigo-500 to-purple-500'
+        primary: 'violet',
+        accent: 'fuchsia',
+        gradient: 'from-violet-900 to-fuchsia-900',
+        bgGradient: 'from-violet-50 via-white to-fuchsia-50',
+        iconBg: 'bg-violet-100 text-violet-700',
+        uploadGradient: 'from-violet-600 via-fuchsia-600 to-violet-600',
+        button: 'bg-violet-700 hover:bg-violet-800'
     } : {
-        primary: 'green',
-        accent: 'emerald',
-        gradient: 'from-green-600 to-emerald-700',
-        bgGradient: 'from-green-50 to-emerald-50',
-        iconBg: 'bg-green-50 text-green-600',
-        uploadGradient: 'from-[#44BC48] via-[#118B44] to-[#44BC48]'
+        primary: 'emerald',
+        accent: 'amber',
+        gradient: 'from-[#064E3B] to-[#065F46]', // Deep Forest Green
+        bgGradient: 'from-[#ECFDF5] via-white to-[#F0FDF4]', // Vertical light gradient
+        iconBg: 'bg-[#D1FAE5] text-[#065F46]',
+        uploadGradient: 'from-[#059669] via-[#10B981] to-[#059669]',
+        button: 'bg-[#059669] hover:bg-[#047857]'
     };
 
     const buildDemoAssessment = React.useCallback((img: string): AssessmentData => {
+        // ... (Demo data generation remains same)
         const visionEvidence: VisionEvidence = {
             lesion_color: 'brown/yellow',
             lesion_shape: 'irregular patches',
@@ -182,54 +186,7 @@ export const Diagnosis: React.FC = () => {
         };
     }, []);
 
-    const loadHistoryRecord = async (record: CropAnalysisRecord) => {
-        setError(null);
-        setStatus(AssessmentStatus.COMPLETED);
-        setAssessmentCache({});
-        setBaseData(null);
-        setActiveTab('results');
 
-        // Restore image preview
-        try {
-            const url = URL.createObjectURL(record.imageBlob);
-            setImage(url);
-        } catch {
-            setImage(null);
-        }
-
-        // Minimal, UI-friendly restored result (keeps things uncluttered)
-        const restored: AssessmentData = {
-            imageUrl: null,
-            visionEvidence: {
-                lesion_color: 'unknown',
-                lesion_shape: 'unknown',
-                texture: 'unknown',
-                distribution: 'unknown',
-                anomalies_detected: [],
-                raw_analysis: record.diagnosis.description || 'Restored from history',
-            },
-            quality: { score: 1, flags: [], reasoning: 'Restored from history.' },
-            healthyResult: { score: 0, arguments: [], evidence_refs: {} },
-            diseaseResult: { score: 0, arguments: [], evidence_refs: {} },
-            arbitrationResult: {
-                decision: record.diagnosis.primaryIssue || 'Unknown',
-                confidence: record.diagnosis.confidence ?? 0,
-                rationale: [],
-            },
-            explanation: {
-                summary: record.diagnosis.description || 'Restored from history.',
-                guidance: record.diagnosis.recommendedActions ? [record.diagnosis.recommendedActions] : [],
-            },
-            leafAssessments: [],
-            uncertaintyFactors: {
-                lowImageQuality: false,
-                multipleLeaves: false,
-                visuallySimilarConditions: false,
-                other: ['This view is restored from history (no re-analysis).'],
-            },
-        };
-        setData(restored);
-    };
 
     // Handle Dynamic Translation on Language Change
     React.useEffect(() => {
@@ -266,7 +223,21 @@ export const Diagnosis: React.FC = () => {
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            // DIA-001: Strict File Validation
             const MAX_IMAGE_BYTES = 6 * 1024 * 1024; // 6MB
+            const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+
+            if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+                setError(
+                    t('file_invalid_type', {
+                        defaultValue: 'Invalid file type. Please upload a valid image (JPEG, PNG, WEBP).',
+                    })
+                );
+                setStatus(AssessmentStatus.ERROR);
+                event.target.value = '';
+                return;
+            }
+
             if (file.size > MAX_IMAGE_BYTES) {
                 setError(
                     t('file_too_large', {
@@ -282,8 +253,18 @@ export const Diagnosis: React.FC = () => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const result = e.target?.result as string;
+                // Double check data header
+                if (!result.startsWith('data:image/')) {
+                    setError(t('file_corrupt', { defaultValue: 'File appears corrupted. Please try another image.' }));
+                    setStatus(AssessmentStatus.ERROR);
+                    return;
+                }
                 setImage(result);
                 startAssessment(result, file);
+            };
+            reader.onerror = () => {
+                setError(t('file_read_error', { defaultValue: 'Failed to read file. Please try again.' }));
+                setStatus(AssessmentStatus.ERROR);
             };
             reader.readAsDataURL(file);
         }
@@ -347,9 +328,21 @@ export const Diagnosis: React.FC = () => {
             };
             addRecord(record);
 
-        } catch (err) {
-            console.error(err);
-            setError(t('error_msg'));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+            console.error("Diagnosis Assessment Error:", err);
+
+            // Check for the specific Quota Error we throw in apiClient
+            const errorMessage = err.message || '';
+
+            if (errorMessage.includes('QUOTA_EXCEEDED')) {
+                setError(t('error_quota', {
+                    defaultValue: 'Server is busy (High Traffic). Please wait ~30 seconds and try again.'
+                }));
+            } else {
+                setError(t('error_msg', { defaultValue: 'Analysis failed. Please check your connection and try again.' }));
+            }
+
             setStatus(AssessmentStatus.ERROR);
         }
     };
@@ -374,25 +367,35 @@ export const Diagnosis: React.FC = () => {
         <div className="w-full">
             <BioNetworkScene />
 
-            <div className="mb-6 border-b border-white/20 pb-6 relative z-10 backdrop-blur-md bg-white/20 shadow-lg rounded-t-2xl p-6 -mx-6 -mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="mb-6 border-b border-white/20 pb-6 relative z-10 backdrop-blur-md bg-white/30 shadow-sm rounded-t-2xl p-6 -mx-6 -mt-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight drop-shadow-sm">
-                        {isBioProspector ? t('app_bio_title', 'Bio-Prospector') : t('app_title')}
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight drop-shadow-sm flex items-center gap-2">
+                        {isBioProspector ? (
+                            <>
+                                <span className="bg-purple-100 text-purple-700 p-1.5 rounded-lg"><Globe className="w-5 h-5" /></span>
+                                {t('app_bio_title', 'Bio-Prospector')}
+                            </>
+                        ) : (
+                            <>
+                                <span className="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg"><CheckCircle2 className="w-5 h-5" /></span>
+                                {t('app_title')}
+                            </>
+                        )}
                     </h2>
-                    <p className="text-gray-600 mt-1 text-sm font-medium">
-                        {isBioProspector ? t('app_bio_desc', 'Discover hidden value in nature') : t('subtitle')} • v2.1.0
+                    <p className="text-gray-600 mt-1 text-sm font-medium ml-1">
+                        {isBioProspector ? t('app_bio_desc', 'Discover hidden value in nature') : t('subtitle')}
                     </p>
                 </div>
 
                 <div className="flex items-center gap-2">
                     {isDemoMode && (
-                        <div className="bg-yellow-50/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-yellow-200 shadow-sm text-xs font-bold text-yellow-900">
-                            DEMO
+                        <div className="bg-amber-50/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-amber-200 shadow-sm text-xs font-bold text-amber-900 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> DEMO MODE
                         </div>
                     )}
 
                     {/* Language Selector */}
-                    <div className="flex items-center gap-2 bg-white/30 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/40 shadow-sm hover:bg-white/40 transition-colors">
+                    <div className="flex items-center gap-2 bg-white/50 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/60 shadow-sm hover:bg-white/70 transition-colors">
                         <Globe className="w-4 h-4 text-gray-700" />
                         <select
                             value={i18n.language}
@@ -429,9 +432,11 @@ export const Diagnosis: React.FC = () => {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.5 }}
-                                className="bg-white/20 backdrop-blur-xl rounded-3xl p-12 border border-white/40 shadow-2xl text-center hover:shadow-3xl transition-all duration-300 hover:bg-white/30"
+                                className="bg-white/40 backdrop-blur-xl rounded-3xl p-12 border border-white/60 shadow-xl text-center hover:shadow-2xl transition-all duration-300 relative overflow-hidden group"
                             >
-                                <div className={`w-20 h-20 ${theme.iconBg} backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner`}>
+                                <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGradient} opacity-50 -z-10`} />
+
+                                <div className={`w-24 h-24 ${theme.iconBg} backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner ring-4 ring-white/50`}>
                                     {isBioProspector ? <Globe className="w-10 h-10" /> : <Upload className="w-10 h-10" />}
                                 </div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-4 drop-shadow-sm">
@@ -442,12 +447,11 @@ export const Diagnosis: React.FC = () => {
                                     <br /><span className="text-sm text-gray-500 font-normal">{t('upload_sub')}</span>
                                 </p>
 
-                                <label className="relative inline-flex group cursor-pointer">
+                                <label className="relative inline-flex group cursor-pointer transform hover:-translate-y-1 transition-transform duration-200">
                                     <div className={`absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r ${theme.uploadGradient} rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt`}></div>
                                     <button
                                         onClick={() => document.getElementById('file-upload')?.click()}
-                                        className={`relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-${theme.primary}-600/90 hover:bg-${theme.primary}-600 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${theme.primary}-600 backdrop-blur-sm shadow-lg`}
-                                        style={{ backgroundColor: isBioProspector ? '#7c3aed' : undefined }} // Fail-safe for dynamic tailwind classes
+                                        className={`relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 ${theme.button} font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${theme.primary}-600 backdrop-blur-sm shadow-xl`}
                                     >
                                         <Upload className="w-5 h-5 mr-2" />
                                         {t('select_button')}
@@ -468,7 +472,7 @@ export const Diagnosis: React.FC = () => {
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-8 p-4 bg-red-50/90 backdrop-blur-sm text-red-700 rounded-lg text-sm border border-red-200 flex items-center gap-3 shadow-lg"
+                                className="mt-8 p-4 bg-red-50/90 backdrop-blur-sm text-red-700 rounded-lg text-sm border border-red-200 flex items-center gap-3 shadow-lg max-w-2xl mx-auto"
                             >
                                 <AlertCircle className="w-5 h-5 shrink-0" />
                                 <span className="font-medium">{error}</span>
@@ -481,7 +485,7 @@ export const Diagnosis: React.FC = () => {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.2 }}
-                                className="mt-16 bg-white/10 backdrop-blur-sm p-8 rounded-2xl border border-white/20"
+                                className="mt-16 bg-white/20 backdrop-blur-md p-8 rounded-2xl border border-white/30"
                             >
                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-8 text-center border-b border-gray-200/30 pb-4">Diagnostic Workflow</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative px-4">
@@ -494,8 +498,8 @@ export const Diagnosis: React.FC = () => {
                                         { icon: FileText, title: t('workflow_3_title'), desc: t('workflow_3_desc') }
                                     ].map((step, idx) => (
                                         <div key={idx} className="flex flex-col items-center text-center group">
-                                            <div className={`w-20 h-20 bg-white/70 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white/50 shadow-md mb-4 relative z-10 group-hover:border-${theme.primary}-300 transition-colors`}>
-                                                <step.icon className={`w-8 h-8 text-gray-500 group-hover:text-${theme.primary}-600 transition-colors`} />
+                                            <div className={`w-20 h-20 bg-white/80 backdrop-blur-md rounded-full flex items-center justify-center border-2 border-white/50 shadow-md mb-4 relative z-10 group-hover:border-${theme.primary}-300 transition-colors`}>
+                                                <step.icon className="w-8 h-8 text-gray-500 group-hover:text-emerald-600 transition-colors" />
                                             </div>
                                             <h5 className="text-sm font-bold text-gray-800 mb-2">{step.title}</h5>
                                             <p className="text-xs text-gray-600 leading-relaxed max-w-[220px] font-medium">
@@ -509,7 +513,7 @@ export const Diagnosis: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-8 pb-12">
-                        {/* Top-level view tabs (always discoverable) */}
+                        {/* Top-level view tabs */}
                         <div className="flex items-center justify-end">
                             <div className="bg-white/60 backdrop-blur-xl rounded-full p-1 border border-white/40 shadow-sm flex items-center gap-1">
                                 <button
@@ -517,7 +521,7 @@ export const Diagnosis: React.FC = () => {
                                     disabled={!(status === AssessmentStatus.COMPLETED && data)}
                                     onClick={() => setActiveTab('results')}
                                     className={`px-4 py-1.5 text-xs font-bold rounded-full transition-colors ${activeTab === 'results'
-                                        ? 'bg-green-600 text-white'
+                                        ? 'bg-emerald-600 text-white'
                                         : 'text-gray-700 hover:bg-white/60'
                                         } disabled:opacity-40 disabled:cursor-not-allowed`}
                                 >
@@ -528,7 +532,7 @@ export const Diagnosis: React.FC = () => {
                                     disabled={!(status === AssessmentStatus.COMPLETED && data)}
                                     onClick={() => setActiveTab('compare')}
                                     className={`px-4 py-1.5 text-xs font-bold rounded-full transition-colors ${activeTab === 'compare'
-                                        ? 'bg-green-600 text-white'
+                                        ? 'bg-emerald-600 text-white'
                                         : 'text-gray-700 hover:bg-white/60'
                                         } disabled:opacity-40 disabled:cursor-not-allowed`}
                                 >
@@ -550,7 +554,7 @@ export const Diagnosis: React.FC = () => {
 
                                         {status === AssessmentStatus.PERCEIVING && (
                                             <div className="absolute top-4 left-4 right-4 bg-black/75 text-white text-xs py-2 px-3 rounded-md shadow-lg backdrop-blur-sm flex items-center gap-2">
-                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                                 {t('processing')}
                                             </div>
                                         )}
@@ -605,9 +609,8 @@ export const Diagnosis: React.FC = () => {
                 )}
 
 
-                {status === AssessmentStatus.COMPLETED && data && (
-                    <AssistantWidget data={data} />
-                )}
+                {/* ALWAYS AVAILABLE ASSISTANT */}
+                <AssistantWidget data={data} />
             </div>
         </div>
     );

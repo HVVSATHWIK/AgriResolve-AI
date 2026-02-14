@@ -20,10 +20,10 @@ const router = Router();
  * Requirement 5.4: Backend shall inject API credentials server-side before calling Gemini API
  */
 const initializeGeminiClient = (): GoogleGenAI | null => {
-  const apiKey = process.env.GEMINI_SERVICE_TOKEN;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    logger.error('GEMINI_SERVICE_TOKEN not found in environment variables');
+    logger.error('GEMINI_API_KEY not found in environment variables');
     return null;
   }
 

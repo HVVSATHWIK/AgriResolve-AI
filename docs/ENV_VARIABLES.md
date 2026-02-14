@@ -74,12 +74,13 @@ This document describes all environment variables used in the AgriResolve-AI app
 
 ### Deprecated Variables
 
-#### `VITE_GEMINI_API_TOKEN` ⚠️ DEPRECATED
-- **Status**: **DEPRECATED - DO NOT USE**
-- **Description**: Previously used for direct Gemini API calls from frontend
-- **Security Issue**: Exposes API keys in client-side code
-- **Migration**: Remove this variable and use the backend API proxy instead
-- **Requirements**: 5.1, 5.2
+#### `GEMINI_SERVICE_TOKEN` (formerly `VITE_GEMINI_API_KEY`)
+- **Description**: API key for Google Gemini AI service (Client-Side)
+- **Required**: Yes
+- **Format**: String starting with "AI"
+- **Security**: 
+  - Exposed to client browser
+  - Use restricted API keys in production (limit to specific domains)
 
 ### Optional Variables
 
@@ -117,8 +118,8 @@ Create a `.env` file in the project root (if needed):
 # Optional
 VITE_API_URL=/api
 
-# DEPRECATED - DO NOT USE
-# VITE_GEMINI_API_TOKEN=... (REMOVE THIS)
+# Client-Side Gemini API
+VITE_GEMINI_API_KEY=your-api-key-here
 ```
 
 ## Security Best Practices
@@ -164,8 +165,8 @@ echo $HOST
 ### Check Frontend Configuration
 
 ```bash
-# Verify no API key in frontend (should be empty)
-echo $VITE_GEMINI_API_TOKEN
+# Verify API key is set
+echo $VITE_GEMINI_API_KEY
 
 # Check API URL
 echo $VITE_API_URL
@@ -203,11 +204,9 @@ echo $VITE_API_URL
 
 If you previously used `VITE_GEMINI_API_TOKEN` in the frontend:
 
-1. **Remove** `VITE_GEMINI_API_TOKEN` from frontend `.env`
-2. **Add** `GEMINI_API_KEY` to backend `.env`
-3. **Update** frontend code to use backend API proxy (already done in this update)
-4. **Test** that analysis requests work through the proxy
-5. **Verify** that API key is not exposed in browser network tab
+1. **Rename** `VITE_GEMINI_API_TOKEN` to `VITE_GEMINI_API_KEY` in frontend `.env`
+2. **Update** backend `.env` to use `GEMINI_API_KEY`
+3. **Verify** that both keys are set correctly if using hybrid mode
 
 ## References
 

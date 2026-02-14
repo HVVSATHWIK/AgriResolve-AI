@@ -14,3 +14,14 @@ declare module 'virtual:pwa-register' {
 
     export function registerSW(options?: RegisterSWOptions): (reloadPage?: boolean) => Promise<void>;
 }
+
+interface ImportMetaEnv {
+    readonly VITE_API_URL: string
+    readonly VITE_API_URL: string
+    readonly GEMINI_SERVICE_TOKEN: string
+    readonly VITE_GEMINI_API_KEY: string // Deprecated, kept for compat if needed, but preferred below
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv
+}

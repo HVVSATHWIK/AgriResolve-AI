@@ -415,9 +415,21 @@ export class ConsolidatedAgent {
           tips: asStringArray(data.bioProspectorResult.tips, [])
         } : undefined
       };
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       console.error("Consolidated Agent Error:", error);
-      throw new Error("Failed to generate assessment.");
+
+      // Preserve specific error messages (like QUOTA_EXCEEDED)
+      if (error.message && (error.message.includes('QUOTA') || error.message.includes('429'))) {
+        throw error;
+      }
+
+      // Fallback for malformed JSON or other unexpected errors
+      if (error instanceof SyntaxError) {
+        throw new Error("AI response was not valid JSON. Please try again.");
+      }
+
+      throw new Error("Failed to generate assessment. " + (error.message || "Unknown error"));
     }
   }
 }

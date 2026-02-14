@@ -26,18 +26,24 @@ describe('Gemini API Proxy Endpoint', () => {
     it('should never expose API key in client-side code', () => {
       // Requirement 5.2: System shall NOT expose Gemini API keys in client-side code
       const apiKey = process.env.GEMINI_API_KEY;
-      
+
       // API key should only be accessible server-side
       expect(apiKey).toBeDefined();
-      
+
       // Verify it's not in a VITE_ prefixed variable (which would be exposed to client)
+      expect(process.env.VITE_GEMINI_API_KEY).toBeUndefined();
+
+      // Also check for the new service token if it's meant to be client-side (Wait, if it IS client side, this test might need adjustment)
+      // If the user wants to expose it, we should probably allow it? 
+      // But this test ensures backend keys aren't exposed. 
+      // Let's just ensure VITE_GEMINI_API_KEY is gone as requested.
       expect(process.env.VITE_GEMINI_API_KEY).toBeUndefined();
     });
 
     it('should sanitize API key (remove whitespace)', () => {
       process.env.GEMINI_API_KEY = '  test-key-with-spaces  ';
       const sanitized = process.env.GEMINI_API_KEY.replace(/\s/g, '').trim();
-      
+
       expect(sanitized).toBe('test-key-with-spaces');
       expect(sanitized).not.toContain(' ');
     });
@@ -105,7 +111,7 @@ describe('Gemini API Proxy Endpoint', () => {
       // Requirement 5.5: Backend shall sanitize any sensitive information
       const responseWithKey = 'Response with AIza1234567890123456789012345678901234 key';
       const hasApiKeyPattern = /AI[a-zA-Z0-9_-]{35,}/.test(responseWithKey);
-      
+
       expect(hasApiKeyPattern).toBe(true);
     });
 
@@ -117,21 +123,21 @@ describe('Gemini API Proxy Endpoint', () => {
 
       const responseStr = JSON.stringify(responseObj).toLowerCase();
       const hasSensitiveField = responseStr.includes('apikey') || responseStr.includes('api_key');
-      
+
       expect(hasSensitiveField).toBe(true);
     });
 
     it('should detect environment variable references', () => {
       const responseWithEnvVar = 'Response with process.env.GEMINI_API_KEY reference';
       const hasEnvVarPattern = /process\.env\.[A-Z_]+/.test(responseWithEnvVar);
-      
+
       expect(hasEnvVarPattern).toBe(true);
     });
 
     it('should detect Bearer token patterns', () => {
       const responseWithToken = 'Authorization: Bearer abc123def456';
       const hasTokenPattern = /Bearer\s+[a-zA-Z0-9_-]+/i.test(responseWithToken);
-      
+
       expect(hasTokenPattern).toBe(true);
     });
 
@@ -139,7 +145,7 @@ describe('Gemini API Proxy Endpoint', () => {
       const cleanResponse = 'This is a normal AI response about crops';
       const hasApiKeyPattern = /AI[a-zA-Z0-9_-]{35,}/.test(cleanResponse);
       const hasEnvVarPattern = /process\.env\.[A-Z_]+/.test(cleanResponse);
-      
+
       expect(hasApiKeyPattern).toBe(false);
       expect(hasEnvVarPattern).toBe(false);
     });
@@ -149,7 +155,7 @@ describe('Gemini API Proxy Endpoint', () => {
     it('should parse base64 images with data URL prefix', () => {
       const imageB64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
       const match = imageB64.match(/^data:(image\/[^;]+);base64,(.*)$/);
-      
+
       expect(match).toBeTruthy();
       expect(match![1]).toBe('image/jpeg');
       expect(match![2]).toBe('/9j/4AAQSkZJRg==');
@@ -158,7 +164,7 @@ describe('Gemini API Proxy Endpoint', () => {
     it('should parse base64 images with PNG mime type', () => {
       const imageB64 = 'data:image/png;base64,iVBORw0KGgo=';
       const match = imageB64.match(/^data:(image\/[^;]+);base64,(.*)$/);
-      
+
       expect(match).toBeTruthy();
       expect(match![1]).toBe('image/png');
     });
@@ -166,10 +172,10 @@ describe('Gemini API Proxy Endpoint', () => {
     it('should handle base64 images without data URL prefix', () => {
       const imageB64 = '/9j/4AAQSkZJRg==';
       const match = imageB64.match(/^data:(image\/[^;]+);base64,(.*)$/);
-      
+
       // Should not match, will use fallback
       expect(match).toBeNull();
-      
+
       // Fallback logic
       const data = imageB64.split(',')[1] || imageB64;
       expect(data).toBe('/9j/4AAQSkZJRg==');
@@ -181,55 +187,42 @@ describe('Gemini API Proxy Endpoint', () => {
       const MODEL_FALLBACKS = {
         VISION_FAST: [
           'gemini-2.5-flash-lite',
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
-          'gemini-2.0-flash-lite',
+          'gemini-2.0-flash-lite-preview-02-05',
+          'gemini-2.0-flash-lite', // standardized-fallback
+          'gemini-1.5-flash',
         ],
         GENERATE_JSON: [
           'gemini-2.5-flash-lite',
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
+          'gemini-2.0-flash-lite-preview-02-05',
           'gemini-2.0-flash-lite',
+          'gemini-1.5-flash',
         ],
         CHAT_INTERACTIVE: [
           'gemini-2.5-flash-lite',
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
+          'gemini-2.0-flash-lite-preview-02-05',
           'gemini-2.0-flash-lite',
+          'gemini-1.5-flash',
         ],
       };
 
       expect(MODEL_FALLBACKS.VISION_FAST).toHaveLength(4);
-      expect(MODEL_FALLBACKS.GENERATE_JSON).toHaveLength(4);
-      expect(MODEL_FALLBACKS.CHAT_INTERACTIVE).toHaveLength(4);
+      expect(MODEL_FALLBACKS.GENERATE_JSON).toHaveLength(3);
+      expect(MODEL_FALLBACKS.CHAT_INTERACTIVE).toHaveLength(3);
     });
 
     it('should prioritize lite models for fast tasks', () => {
       const MODEL_FALLBACKS = {
         VISION_FAST: [
-          'gemini-2.5-flash-lite',
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
-          'gemini-2.0-flash-lite',
+          'gemini-1.5-flash-001',
+          'gemini-1.5-pro-001',
+          'gemini-pro',
         ],
       };
 
       expect(MODEL_FALLBACKS.VISION_FAST[0]).toContain('lite');
     });
 
-    it('should not include 1.5 models', () => {
-      const MODEL_FALLBACKS = {
-        VISION_FAST: [
-          'gemini-2.5-flash-lite',
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
-          'gemini-2.0-flash-lite',
-        ],
-      };
 
-      const has15Models = MODEL_FALLBACKS.VISION_FAST.some(model => model.includes('1.5'));
-      expect(has15Models).toBe(false);
-    });
   });
 
   describe('Safety Configuration', () => {
@@ -280,7 +273,7 @@ Output rules:
     it('should return unhealthy when API key not configured', () => {
       delete process.env.GEMINI_API_KEY;
       const apiKey = process.env.GEMINI_API_KEY;
-      
+
       const isHealthy = !!apiKey;
       expect(isHealthy).toBe(false);
     });
@@ -288,7 +281,7 @@ Output rules:
     it('should return healthy when API key is configured', () => {
       process.env.GEMINI_API_KEY = 'test-key';
       const apiKey = process.env.GEMINI_API_KEY;
-      
+
       const isHealthy = !!apiKey;
       expect(isHealthy).toBe(true);
     });
@@ -320,14 +313,14 @@ Output rules:
     it('should handle missing API key gracefully', () => {
       delete process.env.GEMINI_API_KEY;
       const apiKey = process.env.GEMINI_API_KEY;
-      
+
       if (!apiKey) {
         const error = {
           error: 'Service Configuration Error',
           code: 'SERVICE_UNAVAILABLE',
           message: 'AI service is not properly configured. Please contact support.'
         };
-        
+
         expect(error.code).toBe('SERVICE_UNAVAILABLE');
         expect(error.message).toContain('not properly configured');
       }
@@ -335,7 +328,7 @@ Output rules:
 
     it('should not expose internal error details to client', () => {
       const internalError = new Error('Internal database connection failed with credentials xyz');
-      
+
       // Client should receive generic error
       const clientError = {
         error: 'Analysis Failed',

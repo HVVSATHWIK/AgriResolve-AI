@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, ScanLine, LayoutGrid, TrendingUp, Gamepad2, MessageSquare } from 'lucide-react';
+import { Home, LayoutGrid, TrendingUp, Gamepad2, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const MobileBottomNav: React.FC = () => {

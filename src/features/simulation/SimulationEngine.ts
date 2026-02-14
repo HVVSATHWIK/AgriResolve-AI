@@ -11,6 +11,7 @@ export interface SimulationState {
     nitrogenLevel: number; // 0-100
     pestLevel: number; // 0-100 (0 is good)
     weather: WeatherType;
+    funds: number;
 
     // Configuration
     region: RegionType;
@@ -65,6 +66,7 @@ export class SimulationEngine {
             pestLevel: 0,
             weedLevel: 0,
             weather: 'SUNNY',
+            funds: 1000,
 
             region,
             soilType: soil,
@@ -94,20 +96,35 @@ export class SimulationEngine {
     }
 
     private water() {
+        if (this.state.funds < 10) {
+            this.log('Not enough funds to water! (Need 10)');
+            return;
+        }
+        this.state.funds -= 10;
         this.state.waterLevel = Math.min(100, this.state.waterLevel + 30);
-        this.log('Watered crop (+30 hydration).');
+        this.log('Watered crop (-10 coins, +30 hydration).');
     }
 
     private fertilize() {
+        if (this.state.funds < 50) {
+            this.log('Not enough funds to fertilize! (Need 50)');
+            return;
+        }
         const soil = this.state.soilType;
         const efficiency = soil === 'CLAY' ? 50 : (soil === 'SANDY' ? 30 : 40);
         this.state.nitrogenLevel = Math.min(100, this.state.nitrogenLevel + efficiency);
-        this.log(`Applied fertilizer (+${efficiency} nitrogen).`);
+        this.state.funds -= 50;
+        this.log(`Applied fertilizer (-50 coins, +${efficiency} nitrogen).`);
     }
 
     private applyPesticide() {
+        if (this.state.funds < 100) {
+            this.log('Not enough funds for pesticide! (Need 100)');
+            return;
+        }
+        this.state.funds -= 100;
         this.state.pestLevel = Math.max(0, this.state.pestLevel - 50);
-        this.log('Sprayed pesticide (reduced pests).');
+        this.log('Sprayed pesticide (-100 coins, reduced pests).');
     }
 
     private deweed() {

@@ -1,25 +1,19 @@
 /**
  * Gemini API Integration
  * 
- * DEPRECATED: Direct API calls - Use backend proxy instead
- * This file is kept for backward compatibility but routes through backend proxy
+ * Simplified: Direct Client-Side API calls
  * 
- * Feature: agricultural-accuracy-and-security-fixes
- * Requirements: 5.1, 5.2 - All calls now go through backend proxy
+ * Feature: client-side-simplicity
  */
 
 import { callAnalysisAPI } from './apiClient';
 
-// DEPRECATED: API key should not be in frontend
-// Keeping this for backward compatibility warnings only
-const rawKey = import.meta.env.VITE_GEMINI_API_TOKEN ||
-    (typeof process !== 'undefined' ? process.env?.VITE_GEMINI_API_TOKEN : undefined);
+// API key should be in VITE_GEMINI_API_KEY
+const rawKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 if (rawKey) {
-    console.warn(
-        '[SECURITY] VITE_GEMINI_API_TOKEN detected in frontend environment. ' +
-        'This is deprecated and insecure. All API calls now route through the backend proxy. ' +
-        'Please remove VITE_GEMINI_API_TOKEN from your frontend .env file.'
+    console.log(
+        '[Gemini Service] Client-Side Mode Active.'
     );
 }
 
@@ -34,19 +28,14 @@ const MODEL_FALLBACKS = {
 } as const;
 
 /**
- * Route Gemini call through backend proxy
- * 
- * Requirement 5.1: All Gemini API calls must go through backend proxy
- * Requirement 5.2: Never expose API keys in frontend
- * 
- * @deprecated This function now routes through the backend proxy for security
+ * Route Gemini call directly from client
  */
 export async function routeGeminiCall(
     taskType: keyof typeof MODEL_FALLBACKS,
     prompt: string,
     imageB64?: string
 ): Promise<string> {
-    console.log(`[Gemini Service] Routing '${taskType}' through backend proxy`);
+    console.log(`[Gemini Service] Routing '${taskType}' via Client-Side API`);
 
     try {
         // Map old task types to new ones
@@ -60,9 +49,12 @@ export async function routeGeminiCall(
         });
 
         // Log degradation warnings if present
+        // Log degradation warnings if present (not supported in simple client)
+        /*
         if (response.degraded && response.limitations) {
             console.warn('[Gemini Service] Service degradation detected:', response.limitations);
         }
+        */
 
         // Return result as string (for backward compatibility)
         if (typeof response.result === 'string') {

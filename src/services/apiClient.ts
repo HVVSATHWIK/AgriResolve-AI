@@ -31,7 +31,7 @@ export interface AnalysisRequest {
 }
 
 // Initialize Gemini Client
-const apiKey = import.meta.env.VITE_GEMINI_API_TOKEN;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.GEMINI_SERVICE_TOKEN || process.env.GEMINI_SERVICE_TOKEN;
 const genAI = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 /**
@@ -42,68 +42,123 @@ export async function callAnalysisAPI<T = unknown>(
 ): Promise<ApiResponse<T>> {
 
   if (!genAI) {
-    throw new Error('VITE_GEMINI_API_TOKEN is missing. Please add it to your Environment Variables.');
+    if (!genAI) {
+      throw new Error('GEMINI_SERVICE_TOKEN is missing. Please add it to your Environment Variables.');
+    }
   }
 
-  try {
-    // Select model based on task
-    const modelId = request.taskType === 'VISION_FAST' ? 'gemini-2.0-flash' : 'gemini-2.0-flash';
+  // Model strategy: User explicitly requested '2.5 flash lite'.
+  // We prioritize it, but keep stable fallbacks (2.0-flash-lite, 1.5-flash) in case it returns 404.
+  const MODELS_TO_TRY = ['gemini-2.5-flash-lite', 'gemini-2.0-flash-lite-preview-02-05', 'gemini-1.5-flash'];
 
-    // Prepare contents
-    const parts: any[] = [{ text: request.prompt }];
+  // Retry configuration
+  const MAX_RETRIES_PER_MODEL = 2; // 2 retries = 3 attempts total per model
+  const BASE_DELAY = 1000; // Start with 1s
 
-    if (request.image) {
-      // Remove data:image/...;base64, prefix if present for the SDK
-      const base64Data = request.image.includes(',')
-        ? request.image.split(',')[1]
-        : request.image;
+  let lastError: Error | null = null;
 
-      parts.push({
-        inlineData: {
-          mimeType: 'image/jpeg',
-          data: base64Data
+  for (const modelId of MODELS_TO_TRY) {
+    for (let attempt = 0; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+      try {
+        console.log(`[Gemini API] Attempting ${request.taskType} with ${modelId} (Attempt ${attempt + 1}/${MAX_RETRIES_PER_MODEL + 1})`);
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const parts: any[] = [{ text: request.prompt }];
+
+        if (request.image) {
+          // Remove data:image/...;base64, prefix if present for the SDK
+          const base64Data = request.image.includes(',')
+            ? request.image.split(',')[1]
+            : request.image;
+
+          parts.push({
+            inlineData: {
+              mimeType: 'image/jpeg',
+              data: base64Data
+            }
+          });
         }
-      });
-    }
 
-    // Call the API using the correct SDK method
-    // @google/genai v0.0.x / v1.x pattern
-    const response = await genAI.models.generateContent({
-      model: modelId,
-      contents: [{ parts }],
-      config: {
-        maxOutputTokens: 1400,
-        temperature: 0.2
+        // Call the API using the correct SDK method
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const config: any = {
+          maxOutputTokens: 1400,
+          temperature: 0.2,
+          safetySettings: [
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' }
+          ]
+        };
+
+        if (request.taskType === 'GENERATE_JSON') {
+          config.responseMimeType = 'application/json';
+        }
+
+        const response = await genAI.models.generateContent({
+          model: modelId,
+          contents: [{ parts }],
+          config
+        });
+
+        let text = response.text || '';
+
+        // Clean up JSON if requested
+        if (request.taskType === 'GENERATE_JSON') {
+          text = text.replace(/```json\n?|\n?```/g, '').trim();
+        }
+
+        // Attempt to parse JSON result
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let parsedResult: any = text;
+        try {
+          if (request.taskType === 'GENERATE_JSON' || (text.startsWith('{') && text.endsWith('}'))) {
+            parsedResult = JSON.parse(text);
+          }
+        } catch {
+          // failed to parse, keep as text
+        }
+
+        return {
+          success: true,
+          result: parsedResult as T,
+          timestamp: new Date().toISOString()
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        lastError = error;
+
+        // Check for 429 (Resource Exhausted) or 503 (Service Unavailable)
+        const isTransientError = error.message?.includes('429') ||
+          error.status === 429 ||
+          error.message?.includes('quota') ||
+          error.message?.includes('RESOURCE_EXHAUSTED') ||
+          error.status === 503;
+
+        if (isTransientError) {
+          if (attempt < MAX_RETRIES_PER_MODEL) {
+            // Exponential backoff with jitter: 2^attempt * BASE_DELAY + random jitter
+            const delay = Math.min((Math.pow(2, attempt) * BASE_DELAY) + (Math.random() * 500), 10000);
+
+            console.warn(`[Gemini API] Transient error (${modelId}). Retrying in ${Math.round(delay)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue; // Retry same model
+          } else {
+            console.warn(`[Gemini API] Exhausted retries for ${modelId}. Switching to fallback...`);
+            // Break inner loop to try next model
+            break;
+          }
+        } else {
+          // Non-retriable error (e.g., 400 Bad Request, 401 Unauthorized)
+          console.error(`[Gemini API] Fatal error with ${modelId}:`, error);
+          throw error; // Fail immediately for non-transient errors
+        }
       }
-    });
-
-    let text = response.text || '';
-
-    // Clean up JSON if requested
-    if (request.taskType === 'GENERATE_JSON') {
-      text = text.replace(/```json\n?|\n?```/g, '').trim();
     }
-
-    // Attempt to parse JSON result if the generic T implies it, or just return text
-    let parsedResult: any = text;
-    try {
-      if (request.taskType === 'GENERATE_JSON' || (text.startsWith('{') && text.endsWith('}'))) {
-        parsedResult = JSON.parse(text);
-      }
-    } catch (e) {
-      // failed to parse, keep as text
-    }
-
-    return {
-      success: true,
-      result: parsedResult as T,
-      timestamp: new Date().toISOString()
-    };
-
-  } catch (error: any) {
-    console.error('Gemini API Error:', error);
-    throw new Error(error.message || 'Failed to connect to Gemini API');
   }
+
+  // If we get here, all models failed
+  console.error('[Gemini API] All models and retries failed.');
+  throw lastError || new Error('All, Gemini models failed to respond.');
 }
 
 /**
@@ -112,6 +167,6 @@ export async function callAnalysisAPI<T = unknown>(
 export async function checkAPIHealth(): Promise<{ status: string }> {
   return { status: 'healthy' };
 }
-export async function checkServiceHealth(service: string): Promise<any> {
+export async function checkServiceHealth(service: string): Promise<{ service: string; available: boolean; message: string }> {
   return { service, available: true, message: 'Client-side only' };
 }

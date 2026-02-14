@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, DollarSign, Clock, MapPin, Sprout, ArrowRight, Activity, AlertTriangle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { TrendingUp, DollarSign, Clock, Sprout, ArrowRight, Activity, AlertTriangle } from 'lucide-react';
 
 // --- Data Interfaces ---
 interface MarketItem {

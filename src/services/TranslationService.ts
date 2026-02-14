@@ -17,6 +17,11 @@ export async function translateAssessmentData(
         return data;
     }
 
+    // Optimization: Skip translation if target is English (Source is English)
+    if (targetLanguage === 'en') {
+        return data;
+    }
+
     const prompt = `
     You are a precise JSON Translator for an Agricultural AI App.
 

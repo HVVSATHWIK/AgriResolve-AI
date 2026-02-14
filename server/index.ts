@@ -6,6 +6,8 @@ import session from 'express-session';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { apiGateway } from './gateway/apiGateway.js';
 import { analysisRouter } from './routes/analysis.js';
@@ -118,17 +120,45 @@ websocketManager.initialize(io);
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server
-server.listen(PORT, HOST, () => {
-  logger.info(`🚀 AgriResolve Collaborative Server running on ${HOST}:${PORT}`);
-  logger.info(`📡 WebSocket server initialized`);
-  logger.info(`🔒 Security middleware active`);
-  logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔐 Session management enabled`);
+// Start server only if run directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  server.listen(PORT, HOST, () => {
+    logger.info(`🚀 AgriResolve Collaborative Server running on ${HOST}:${PORT}`);
+    logger.info(`📡 WebSocket server initialized`);
+    logger.info(`🔒 Security middleware active`);
+    logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🔐 Session management enabled`);
 
-  // Initialize services
-  serviceRegistry.startServices();
-});
+    // Initialize services
+    serviceRegistry.startServices();
+  });
+}
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  // The server is built to dist/server/index.js, so the frontend is at ../../dist
+  // actually, based on tsconfig.server.json outDir is ../dist/server
+  // and vite builds to dist/
+  // so from dist/server/index.js, we need to go up one level to dist/
+
+  // Wait, let's double check the build output structure.
+  // Vite builds to 'dist' (index.html, assets, etc)
+  // Server builds to 'dist/server' (index.js, etc)
+
+  const clientBuildPath = path.join(__dirname, '..'); // This points to dist/
+
+  app.use(express.static(clientBuildPath));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    // skip api routes
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
