@@ -4,7 +4,7 @@ services:
     name: agriresolve-backend
     env: node
     plan: free # Use Free Tier
-    buildCommand: npm install && npm run build && npm run build:server
+    buildCommand: npm install --production=false && npm run build && npm run build:server
     startCommand: npm run start:server
     envVars:
       - key: NODE_ENV
