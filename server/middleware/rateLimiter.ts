@@ -60,7 +60,8 @@ export const hourlyRateLimiter: RateLimitRequestHandler = rateLimit({
   },
 
   // Disable strict IPv6 validation as we trust the proxy
-  validate: { trustProxy: false },
+  // and primarily use session ID, not IP, for rate limiting
+  validate: { trustProxy: false, keyGeneratorIpFallback: false },
 
   // Custom handler for rate limit exceeded
   handler: (req: Request, res: Response) => {
