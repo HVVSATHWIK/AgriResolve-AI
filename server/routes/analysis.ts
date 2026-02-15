@@ -583,7 +583,7 @@ router.post('/analysis', async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Analysis Failed',
       code: 'ANALYSIS_ERROR',
-      message: 'Failed to process analysis request. Please try again later.',
+      message: `DEBUG: ${error.message}. Stack: ${error.stack}`,
       timestamp: new Date().toISOString()
     });
   }
