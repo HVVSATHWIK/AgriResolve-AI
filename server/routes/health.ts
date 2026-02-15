@@ -55,7 +55,7 @@ async function checkGeminiAPIAvailability(): Promise<{ available: boolean; messa
 
     await withTimeout(
       model({
-        model: 'gemini-1.5-flash', // Use stable model for health check
+        model: 'gemini-2.5-flash', // Use stable model for health check
         contents: [{ parts: [{ text: 'ping' }] }],
         config: {
           temperature: 0,
