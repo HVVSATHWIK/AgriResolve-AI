@@ -51,12 +51,17 @@ export const hourlyRateLimiter: RateLimitRequestHandler = rateLimit({
   max: 20, // 20 requests per hour
   standardHeaders: true,
   legacyHeaders: false,
-  
+
   // Use session ID as the key for rate limiting
-  keyGenerator: (req: Request) => {
+  keyGenerator: (req: Request): string => {
+    // If session exists, use it. Otherwise fall back to IP.
+    // Note: Render's load balancer handles IP extraction via 'trust proxy' setting in index.ts
     return req.session?.id || req.ip || 'unknown';
   },
-  
+
+  // Disable strict IPv6 validation as we trust the proxy
+  validate: { trustProxy: false },
+
   // Custom handler for rate limit exceeded
   handler: (req: Request, res: Response) => {
     const requestHistory = req.session?.requestHistory || [];
@@ -75,7 +80,7 @@ export const hourlyRateLimiter: RateLimitRequestHandler = rateLimit({
       timestamp: new Date().toISOString()
     });
   },
-  
+
   // Skip rate limiting for certain conditions
   skip: (req: Request) => {
     // Skip for health checks
@@ -184,7 +189,7 @@ export const rateLimitStatus = (req: Request, res: Response, next: NextFunction)
       limit: 5,
       remaining: shortTermRemaining,
       used: recentShortTerm.length,
-      resetTime: recentShortTerm.length > 0 
+      resetTime: recentShortTerm.length > 0
         ? new Date(recentShortTerm[0].timestamp + shortTermWindow)
         : new Date(Date.now() + shortTermWindow)
     },
