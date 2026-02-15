@@ -33,10 +33,8 @@ const io = new SocketIOServer(server, {
   }
 });
 
-// Security: Bind to localhost in development, allow configuration in production
-const HOST = process.env.NODE_ENV === 'production'
-  ? process.env.HOST || '0.0.0.0'
-  : '127.0.0.1';
+// Security: Bind to 0.0.0.0 in production for Render/Docker, localhost in dev
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
