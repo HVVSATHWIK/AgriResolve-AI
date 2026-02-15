@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => {
           // Cache common static assets aggressively for field use.
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,glsl}'],
           navigateFallback: '/',
+          navigateFallbackDenylist: [/^\/api/], // Don't intercept API requests
           runtimeCaching: [
             {
               urlPattern: ({ request }) => request.destination === 'image',
@@ -75,7 +76,9 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     define: {
-      'process.env.GEMINI_SERVICE_TOKEN': JSON.stringify(env.GEMINI_SERVICE_TOKEN || process.env.GEMINI_SERVICE_TOKEN || "")
+      // Expose generic env vars to the client (Vite specific)
+      'process.env.GEMINI_SERVICE_TOKEN': JSON.stringify(env.GEMINI_SERVICE_TOKEN || process.env.GEMINI_SERVICE_TOKEN || ""),
+      'process.env.VITE_GEMINI_SERVICE_TOKEN': JSON.stringify(env.VITE_GEMINI_SERVICE_TOKEN || process.env.VITE_GEMINI_SERVICE_TOKEN || "")
     },
     resolve: {
       alias: {
