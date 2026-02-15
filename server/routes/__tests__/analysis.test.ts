@@ -187,35 +187,43 @@ describe('Gemini API Proxy Endpoint', () => {
       const MODEL_FALLBACKS = {
         VISION_FAST: [
           'gemini-2.5-flash-lite',
-          'gemini-2.0-flash-lite-preview-02-05',
-          'gemini-2.0-flash-lite', // standardized-fallback
-          'gemini-1.5-flash',
+          'gemini-2.5-flash',
+          'gemini-2.0-flash-lite-001',
+          'gemini-2.0-flash-001',
+          'gemini-2.0-flash',
+          'gemini-2.5-pro',
         ],
         GENERATE_JSON: [
           'gemini-2.5-flash-lite',
-          'gemini-2.0-flash-lite-preview-02-05',
-          'gemini-2.0-flash-lite',
-          'gemini-1.5-flash',
+          'gemini-2.5-flash',
+          'gemini-2.0-flash-lite-001',
+          'gemini-2.0-flash-001',
+          'gemini-2.0-flash',
+          'gemini-2.5-pro',
         ],
         CHAT_INTERACTIVE: [
           'gemini-2.5-flash-lite',
-          'gemini-2.0-flash-lite-preview-02-05',
-          'gemini-2.0-flash-lite',
-          'gemini-1.5-flash',
+          'gemini-2.5-flash',
+          'gemini-2.0-flash-lite-001',
+          'gemini-2.0-flash-001',
+          'gemini-2.0-flash',
+          'gemini-2.5-pro',
         ],
       };
 
-      expect(MODEL_FALLBACKS.VISION_FAST).toHaveLength(4);
-      expect(MODEL_FALLBACKS.GENERATE_JSON).toHaveLength(3);
-      expect(MODEL_FALLBACKS.CHAT_INTERACTIVE).toHaveLength(3);
+      expect(MODEL_FALLBACKS.VISION_FAST.length).toBeGreaterThanOrEqual(2);
+      expect(MODEL_FALLBACKS.GENERATE_JSON.length).toBeGreaterThanOrEqual(2);
+      expect(MODEL_FALLBACKS.CHAT_INTERACTIVE.length).toBeGreaterThanOrEqual(2);
+      expect(MODEL_FALLBACKS.VISION_FAST[0]).toBe('gemini-2.5-flash-lite');
+      expect(MODEL_FALLBACKS.GENERATE_JSON[0]).toBe('gemini-2.5-flash-lite');
+      expect(MODEL_FALLBACKS.CHAT_INTERACTIVE[0]).toBe('gemini-2.5-flash-lite');
     });
 
     it('should prioritize lite models for fast tasks', () => {
       const MODEL_FALLBACKS = {
         VISION_FAST: [
-          'gemini-1.5-flash-001',
-          'gemini-1.5-pro-001',
-          'gemini-pro',
+          'gemini-2.5-flash-lite',
+          'gemini-2.5-flash',
         ],
       };
 

@@ -85,19 +85,25 @@ const DEFAULT_CONFIG = {
  */
 const MODEL_FALLBACKS: Record<string, string[]> = {
   VISION_FAST: [
+    'gemini-2.5-flash-lite',
     'gemini-2.5-flash',
+    'gemini-2.0-flash-lite-001',
     'gemini-2.0-flash-001',
     'gemini-2.0-flash',
     'gemini-2.5-pro',
   ],
   GENERATE_JSON: [
+    'gemini-2.5-flash-lite',
     'gemini-2.5-flash',
+    'gemini-2.0-flash-lite-001',
     'gemini-2.0-flash-001',
     'gemini-2.0-flash',
     'gemini-2.5-pro',
   ],
   CHAT_INTERACTIVE: [
+    'gemini-2.5-flash-lite',
     'gemini-2.5-flash',
+    'gemini-2.0-flash-lite-001',
     'gemini-2.0-flash-001',
     'gemini-2.0-flash',
     'gemini-2.5-pro',
@@ -195,7 +201,7 @@ const callGeminiAPI = async (
   prompt: string,
   imageB64?: string
 ): Promise<any> => {
-  const modelCandidates = MODEL_FALLBACKS[taskType] ?? ['gemini-2.5-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash'];
+  const modelCandidates = MODEL_FALLBACKS[taskType] ?? ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash-lite-001'];
   const model = ai.models.generateContent;
 
   const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
