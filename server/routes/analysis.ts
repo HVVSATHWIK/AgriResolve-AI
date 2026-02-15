@@ -164,6 +164,27 @@ const sanitizeResponse = (response: any): any => {
   return removeSensitiveFields(sanitized);
 };
 
+const extractJsonPayload = (text: string): string => {
+  const cleaned = text
+    .replace(/```json\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  const objStart = cleaned.indexOf('{');
+  const objEnd = cleaned.lastIndexOf('}');
+  if (objStart !== -1 && objEnd !== -1 && objEnd > objStart) {
+    return cleaned.slice(objStart, objEnd + 1).trim();
+  }
+
+  const arrStart = cleaned.indexOf('[');
+  const arrEnd = cleaned.lastIndexOf(']');
+  if (arrStart !== -1 && arrEnd !== -1 && arrEnd > arrStart) {
+    return cleaned.slice(arrStart, arrEnd + 1).trim();
+  }
+
+  return cleaned;
+};
+
 /**
  * Call Gemini API with retry logic and model fallbacks
  * Requirement 5.3: Backend shall validate request before forwarding to Gemini API
@@ -173,7 +194,7 @@ const callGeminiAPI = async (
   taskType: keyof typeof MODEL_FALLBACKS,
   prompt: string,
   imageB64?: string
-): Promise<string> => {
+): Promise<any> => {
   const modelCandidates = MODEL_FALLBACKS[taskType] ?? ['gemini-2.5-flash', 'gemini-2.0-flash-001', 'gemini-2.0-flash'];
   const model = ai.models.generateContent;
 
@@ -204,15 +225,28 @@ const callGeminiAPI = async (
           contents: [{ parts }],
           config: {
             ...DEFAULT_CONFIG,
+            // For JSON tasks, ask the API to return JSON candidates.
+            ...(taskType === 'GENERATE_JSON'
+              ? {
+                responseMimeType: 'application/json',
+                temperature: 0,
+              }
+              : {}),
             systemInstruction: { parts: [{ text: SAFETY_SYSTEM_INSTRUCTION }] },
           } as any,
         });
 
         const text = response.text || '';
 
-        // For JSON tasks, strip markdown code blocks if present
+        // For JSON tasks, extract+parse JSON so the client always receives valid JSON.
         if (taskType === 'GENERATE_JSON') {
-          return text.replace(/```json\n?|\n?```/g, '').trim();
+          const payload = extractJsonPayload(text);
+          try {
+            return JSON.parse(payload);
+          } catch {
+            // If the model violates JSON constraints, treat as failure so we can retry / rotate models.
+            throw new Error('Model returned invalid JSON');
+          }
         }
 
         return text;
