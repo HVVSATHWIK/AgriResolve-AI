@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMobile } from '../hooks/useMobile';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
+import { Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows, PointerLockControls, Stars, Cloud } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Environment, Sky, PointerLockControls, Stars, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
 
@@ -210,7 +209,6 @@ const ScoutCamera: React.FC = () => {
     const moveBackward = useRef(false);
     const moveLeft = useRef(false);
     const moveRight = useRef(false);
-    const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
 
     useEffect(() => {
@@ -319,9 +317,9 @@ const CameraController: React.FC<{ mode: 'ORBIT' | 'SCOUT' }> = ({ mode }) => {
         <ScoutCamera />;
 };
 
+// --- Main Interface ---
 export const Simulator: React.FC = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     // Setup (Mock SHC for now - usually passed from user profile)
     const [shc] = useState<SoilHealthCard>({
         id: "demo-1", N: 280, P: 22, K: 150, pH: 7.2, EC: 0.5, OC: 0.6
@@ -342,7 +340,7 @@ export const Simulator: React.FC = () => {
 
     // Auto-Run Effect
     useEffect(() => {
-        let interval: any;
+        let interval: NodeJS.Timeout;
         if (isPlaying) {
             interval = setInterval(() => {
                 const newState = engine.nextDay({});
@@ -360,6 +358,9 @@ export const Simulator: React.FC = () => {
                     type === 'WEED' ? { weed: true } :
                         { harvest: true, newCrop: selectedCrop === 'RICE' ? 'WHEAT' : 'RICE' } // Toggles for demo
         );
+
+        // SIM-001: Pause auto-play on manual interaction to avoid confusion state jumps
+        if (isPlaying) setIsPlaying(false);
 
         // Auto switch selected crop if harvested
         if (type === 'HARVEST') {
@@ -399,15 +400,7 @@ export const Simulator: React.FC = () => {
                 border-r border-white/10 p-6 flex-col gap-6 transition-transform duration-300 ease-in-out md:translate-x-0 md:flex md:w-80
                 ${isSidebarOpen ? 'flex translate-x-0' : 'hidden md:flex -translate-x-full'}
             `}>
-                <div className="hidden md:block mb-4">
-                    <button
-                        type="button"
-                        onClick={() => navigate('/')}
-                        className="inline-flex items-center gap-2 text-xs font-bold text-neutral-400 hover:text-white transition-colors mb-3"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>{t('back_to_hub', 'Back to Hub')}</span>
-                    </button>
+                <div className="hidden md:block">
                     <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
                         <Activity className="w-6 h-6 text-emerald-400" /> {t('sim_title', 'Agri-Twin')}
                     </h1>

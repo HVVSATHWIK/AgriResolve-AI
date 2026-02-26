@@ -21,8 +21,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { hourlyRateLimiter, shortTermRateLimiter, rateLimitStatus } from './middleware/rateLimiter.js';
 import { logger } from './utils/logger.js';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables, overriding any existing system/terminal vars
+dotenv.config({ override: true });
 
 const app = express();
 const server = createServer(app);
@@ -60,6 +60,7 @@ const allowedOrigins = [
   'http://localhost:3000',
 ].filter(Boolean) as string[];
 
+// @ts-ignore - Type mismatch between cors and Express 5
 app.use(cors({
   origin: allowedOrigins,
   credentials: true

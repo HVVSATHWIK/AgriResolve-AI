@@ -1,0 +1,4 @@
+
+> agriresolve-ai@0.0.0 typecheck
+> tsc --noEmit
+

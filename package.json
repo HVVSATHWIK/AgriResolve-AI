@@ -21,7 +21,9 @@
     "coverage": "jest --config jest.config.cjs --coverage",
     "test:css": "stylelint \"src/**/*.css\"",
     "build:server": "tsc -p server/tsconfig.json",
-    "start:server": "node dist/server/index.js"
+    "start:server": "node dist/server/index.js",
+    "dev:server": "tsx watch --include .env server/index.ts",
+    "dev:full": "concurrently \"npm run dev\" \"npm run dev:server\""
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
@@ -72,6 +74,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.2.3",
     "@types/pg": "^8.16.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/react-router-dom": "^5.3.3",
     "@types/serve-static": "^2.2.0",
     "@types/slice-ansi": "^5.0.2",
@@ -79,6 +83,7 @@
     "@typescript-eslint/parser": "^8.50.1",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.23",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",

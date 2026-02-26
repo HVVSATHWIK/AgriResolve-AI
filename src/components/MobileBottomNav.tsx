@@ -1,17 +1,16 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, LayoutGrid, TrendingUp, Gamepad2, MessageSquare } from 'lucide-react';
+import { LayoutGrid, TrendingUp, Gamepad2, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const MobileBottomNav: React.FC = () => {
     const { t } = useTranslation();
 
     const navItems = [
-        { to: "/", icon: LayoutGrid, label: t('nav_home', "Hub") },
+        { to: "/", icon: LayoutGrid, label: t('nav_home', "Home") },
         { to: "/chat", icon: MessageSquare, label: t('assistant_title', "Assistant") },
-        { to: "/market", icon: TrendingUp, label: t('nav_market', "Market") },
+        { to: "/market", icon: TrendingUp, label: 'AgriWise' },
         { to: "/simulator", icon: Gamepad2, label: t('nav_sim', "Twin") },
-        { to: "/history", icon: Home, label: t('nav_history', "History") },
     ];
 
     return (

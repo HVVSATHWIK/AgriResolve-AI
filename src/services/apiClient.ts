@@ -34,7 +34,22 @@ export interface AnalysisRequest {
  * In production → VITE_API_URL (e.g. https://agriresolve-backend.onrender.com)
  * In development → empty string (Vite proxy or same-origin)
  */
-const API_BASE = import.meta.env.VITE_API_URL ?? '';
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim();
+
+async function postAnalysis(baseUrl: string, request: AnalysisRequest) {
+  return fetch(`${baseUrl}/api/analysis`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      taskType: request.taskType,
+      prompt: request.prompt,
+      image: request.image,
+      weatherData: request.manualWeather
+    }),
+  });
+}
 
 /**
  * Call Gemini API via Backend Proxy
@@ -46,18 +61,12 @@ export async function callAnalysisAPI<T = unknown>(
   try {
     console.log(`[API Client] Sending ${request.taskType} request to backend at ${API_BASE}/api/analysis ...`);
 
-    const response = await fetch(`${API_BASE}/api/analysis`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        taskType: request.taskType,
-        prompt: request.prompt,
-        image: request.image,
-        weatherData: request.manualWeather
-      }),
-    });
+    let response = await postAnalysis(API_BASE, request);
+
+    if (!response.ok && response.status === 503 && import.meta.env.DEV && API_BASE) {
+      console.warn('[API Client] Remote backend is unavailable (503). Retrying against local /api proxy...');
+      response = await postAnalysis('', request);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -72,7 +81,7 @@ export async function callAnalysisAPI<T = unknown>(
       timestamp: new Date().toISOString()
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API Client] Backend request failed:', error);
     throw error;
   }

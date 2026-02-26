@@ -1,17 +1,35 @@
+/// <reference types="node" />
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
+// @ts-ignore - NodeJS module
+import { fileURLToPath } from 'url';
+// @ts-ignore - NodeJS module
+import { dirname, resolve } from 'path';
+// @ts-ignore - NodeJS module
+import process from 'process';
 import { VitePWA } from 'vite-plugin-pwa';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+  // @ts-ignore - NodeJS module
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     server: {
       port: 3000,
       host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          // @ts-ignore - NodeJS module
+          target: process.env.VITE_API_URL || 'http://localhost:3001',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     },
     preview: {
       port: 3000,
@@ -82,7 +100,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': resolve(__dirname, './src'),
       }
     }
   };

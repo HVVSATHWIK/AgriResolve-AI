@@ -15,20 +15,27 @@
     "moduleDetection": "force",
     "allowJs": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "src/*"
       ]
     },
-    "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": [
+      "vite/client",
+      "react",
       "jest",
       "node"
     ]
   },
   "include": [
     "src"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
   ]
 }

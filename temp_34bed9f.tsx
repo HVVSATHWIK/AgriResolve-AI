@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows, PointerLockControls, Stars, Cloud } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Environment, Sky, PointerLockControls, Stars, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
 
@@ -210,7 +210,6 @@ const ScoutCamera: React.FC = () => {
     const moveBackward = useRef(false);
     const moveLeft = useRef(false);
     const moveRight = useRef(false);
-    const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
 
     useEffect(() => {
@@ -319,6 +318,7 @@ const CameraController: React.FC<{ mode: 'ORBIT' | 'SCOUT' }> = ({ mode }) => {
         <ScoutCamera />;
 };
 
+// --- Main Interface ---
 export const Simulator: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -342,7 +342,7 @@ export const Simulator: React.FC = () => {
 
     // Auto-Run Effect
     useEffect(() => {
-        let interval: any;
+        let interval: NodeJS.Timeout;
         if (isPlaying) {
             interval = setInterval(() => {
                 const newState = engine.nextDay({});
@@ -360,6 +360,9 @@ export const Simulator: React.FC = () => {
                     type === 'WEED' ? { weed: true } :
                         { harvest: true, newCrop: selectedCrop === 'RICE' ? 'WHEAT' : 'RICE' } // Toggles for demo
         );
+
+        // SIM-001: Pause auto-play on manual interaction to avoid confusion state jumps
+        if (isPlaying) setIsPlaying(false);
 
         // Auto switch selected crop if harvested
         if (type === 'HARVEST') {
@@ -382,6 +385,14 @@ export const Simulator: React.FC = () => {
             {/* Mobile Header / Toggle */}
             <div className="md:hidden bg-neutral-800 border-b border-white/10 p-4 flex justify-between items-center z-20 shrink-0">
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/')}
+                        aria-label={t('back_to_hub', 'Back to Hub')}
+                        className="p-2 -ml-2 rounded-lg text-neutral-300 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
                     <Activity className="w-5 h-5 text-emerald-400" />
                     <span className="font-bold text-lg tracking-tight">Agri-Twin</span>
                 </div>
@@ -399,7 +410,7 @@ export const Simulator: React.FC = () => {
                 border-r border-white/10 p-6 flex-col gap-6 transition-transform duration-300 ease-in-out md:translate-x-0 md:flex md:w-80
                 ${isSidebarOpen ? 'flex translate-x-0' : 'hidden md:flex -translate-x-full'}
             `}>
-                <div className="hidden md:block mb-4">
+                <div className="hidden md:block">
                     <button
                         type="button"
                         onClick={() => navigate('/')}

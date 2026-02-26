@@ -13,7 +13,12 @@ const App: React.FC = () => {
   // API Key check removed as we now use Backend Proxy.
 
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Simulator Standalone Route */}
         <Route path="/simulator" element={<Simulator />} />

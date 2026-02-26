@@ -62,9 +62,9 @@ export const Dashboard: React.FC = () => {
         },
         {
             id: 'market',
-            title: t('app_market_title', 'Market Pulse'),
-            desc: t('app_market_desc', 'Real-time prices & cooperative selling'),
-            actionLabel: t('action_market', 'Analyze Market'),
+            title: 'AgriWise Crop Advisor',
+            desc: 'Real-time data.gov.in market intelligence + weather-based crop ranking',
+            actionLabel: 'Plan Better Crop Choices',
             icon: TrendingUp,
             action: () => navigate('/market'),
             status: 'Active',
