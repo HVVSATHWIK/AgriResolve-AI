@@ -10,7 +10,8 @@ import { usePersistentHistory } from '../features/history/hooks/usePersistentHis
 import { CompareView } from '../features/history/components/CompareView';
 import { AssistantWidget } from '../features/assistant/components/AssistantWidget';
 import { BioNetworkScene } from '../features/visualization/components/BioNetworkScene';
-import { Upload, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
+import { Upload, AlertCircle, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { motion } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
@@ -270,6 +271,39 @@ export const Diagnosis: React.FC = () => {
         }
     };
 
+    const handleTakePhoto = async () => {
+        try {
+            const image = await Camera.getPhoto({
+                quality: 80,
+                allowEditing: false,
+                resultType: CameraResultType.DataUrl,
+                source: CameraSource.Camera
+            });
+
+            if (image.dataUrl) {
+                // Convert dataUrl to a File object for the pipeline
+                const response = await fetch(image.dataUrl);
+                const blob = await response.blob();
+                const file = new File([blob], "camera_photo.jpg", { type: "image/jpeg" });
+
+                const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
+                if (file.size > MAX_IMAGE_BYTES) {
+                    setError(t('file_too_large', { defaultValue: 'Image file is too large. Please capture a smaller photo.' }));
+                    setStatus(AssessmentStatus.ERROR);
+                    return;
+                }
+
+                setImage(image.dataUrl);
+                startAssessment(image.dataUrl, file);
+            }
+        } catch (error: any) {
+            console.error("Camera Error:", error);
+            if (error.message !== "User cancelled photos app" && !error.message.includes("cancelled")) {
+                setError("Failed to access camera. Please check permissions or use standard upload.");
+            }
+        }
+    };
+
     const startAssessment = async (img: string, file: File) => {
         setStatus(AssessmentStatus.PERCEIVING);
         setError(null);
@@ -447,23 +481,33 @@ export const Diagnosis: React.FC = () => {
                                     <br /><span className="text-sm text-gray-500 font-normal">{t('upload_sub')}</span>
                                 </p>
 
-                                <label className="relative inline-flex group cursor-pointer transform hover:-translate-y-1 transition-transform duration-200">
-                                    <div className={`absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r ${theme.uploadGradient} rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt`}></div>
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                                     <button
-                                        onClick={() => document.getElementById('file-upload')?.click()}
-                                        className={`relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 ${theme.button} font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${theme.primary}-600 backdrop-blur-sm shadow-xl`}
+                                        onClick={handleTakePhoto}
+                                        className={`relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 ${theme.button} font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${theme.primary}-600 backdrop-blur-sm shadow-xl hover:-translate-y-1 transform`}
                                     >
-                                        <Upload className="w-5 h-5 mr-2" />
-                                        {t('select_button')}
+                                        <CameraIcon className="w-5 h-5 mr-2" />
+                                        Take Photo
                                     </button>
-                                    <input
-                                        id="file-upload"
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                    />
-                                </label>
+
+                                    <label className="relative inline-flex group cursor-pointer transform hover:-translate-y-1 transition-transform duration-200">
+                                        <div className={`absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r ${theme.uploadGradient} rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt`}></div>
+                                        <button
+                                            onClick={() => document.getElementById('file-upload')?.click()}
+                                            className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-gray-800 hover:bg-gray-900 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 backdrop-blur-sm shadow-xl"
+                                        >
+                                            <Upload className="w-5 h-5 mr-2" />
+                                            Upload File
+                                        </button>
+                                        <input
+                                            id="file-upload"
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleImageUpload}
+                                        />
+                                    </label>
+                                </div>
                             </motion.div>
                         )}
 

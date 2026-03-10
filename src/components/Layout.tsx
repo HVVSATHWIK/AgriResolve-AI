@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { HistorySidebar } from '../features/history/components/HistorySidebar';
 import { CropAnalysisRecord } from '../features/history/types';
-import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, ArrowLeft } from 'lucide-react';
+import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, ArrowLeft, LogOut, User } from 'lucide-react';
 import { InsightsDashboard } from '../features/assistant/components/InsightsDashboard';
 import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileBottomNav } from './MobileBottomNav';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
   const { locationName, requestPermission, consent } = useLocationWeather();
   const [showHistory, setShowHistory] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser, signOut } = useAuth();
 
   // Dark Mode removed as per request
 
@@ -238,6 +240,33 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
             </div>
 
           </div>
+
+          {/* 6. User Profile & Logout */}
+          {currentUser && (
+            <div className="mt-auto px-4 pb-4 shrink-0">
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2 overflow-hidden flex-1">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="truncate pr-2">
+                    <p className="text-xs font-bold text-gray-900 truncate">{currentUser.email}</p>
+                    <p className="text-[10px] text-gray-400 truncate">Authenticated User</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    signOut().then(() => navigate('/login'));
+                  }}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                  aria-label="Logout"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Footer - Copyright */}
           <div className="p-4 border-t border-gray-100 bg-white text-center">

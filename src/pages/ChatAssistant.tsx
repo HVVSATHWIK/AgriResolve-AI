@@ -142,7 +142,7 @@ export const ChatAssistant: React.FC = () => {
                                     {msg.sender === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
                                     <span>{msg.sender === 'user' ? 'You' : 'Agri-Bot'}</span>
                                 </div>
-                                <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
+                                <div className="whitespace-pre-wrap">{msg.text}</div>
 
                                 {msg.sender === 'ai' && hasTTS && (
                                     <div className="mt-2 flex justify-end">

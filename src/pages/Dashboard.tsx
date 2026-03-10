@@ -75,13 +75,12 @@ export const Dashboard: React.FC = () => {
     return (
         <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Hero Section - The "Situation Room" (Reality Check: Welcome Message Restored) */}
-            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-10 text-white shadow-2xl transition-all hover:shadow-emerald-900/40 group bg-[#022c22]">
-                {/* Backgrounds - High Contrast for Field Visibility */}
+            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-10 text-white shadow-2xl group bg-[#022c22]">
+                {/* Background gradient */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#047857] opacity-95 z-0"></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay z-0"></div>
 
-                {/* Subtle animated accent */}
-                <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] animate-pulse-slow pointer-events-none"></div>
+                {/* Subtle accent */}
+                <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none"></div>
 
                 <div className="relative z-10 max-w-3xl">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/50 border border-emerald-800/50 backdrop-blur-md mb-4 shadow-inner">
@@ -101,22 +100,20 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Apps Grid - Functional Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(180px,auto)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {apps.map((app) => (
-                    <div
+                    <button
                         key={app.id}
                         onClick={app.action}
                         className={`
-                            relative rounded-[2rem] border transition-all duration-200 cursor-pointer group flex flex-col justify-between overflow-hidden
+                            relative rounded-[2rem] border transition-all duration-200 cursor-pointer group flex flex-col justify-between overflow-hidden text-left
                             ${app.isFlagship
-                                ? 'md:col-span-2 lg:col-span-2 bg-gradient-to-br from-[#064e3b] to-[#047857] border-emerald-800 shadow-xl' // High contrast Green
+                                ? 'md:col-span-2 lg:col-span-2 bg-gradient-to-br from-[#064e3b] to-[#047857] border-emerald-800 shadow-xl'
                                 : 'bg-white border-emerald-100 shadow-sm hover:shadow-xl hover:border-emerald-400'
                             }
-                            active:scale-[0.98] // Tactile feedback
+                            active:scale-[0.98]
                         `}
                     >
-                        {/* Touch Target Expansion */}
-                        <div className="absolute inset-0 z-0" aria-hidden="true"></div>
 
                         <div className="p-6 md:p-8 h-full flex flex-col relative z-10">
                             {/* Header */}
@@ -153,21 +150,21 @@ export const Dashboard: React.FC = () => {
                                 </p>
                             </div>
 
-                            {/* Massive CTA for Field Use */}
+                            {/* CTA indicator */}
                             {app.status === 'Active' && (
-                                <button className={`
-                                    w-full py-4 px-6 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-between transition-colors
+                                <div className={`
+                                    w-full py-4 px-6 rounded-xl font-black text-sm uppercase tracking-wider flex items-center justify-between
                                     ${app.isFlagship
-                                        ? 'bg-amber-400 hover:bg-amber-300 text-emerald-950 shadow-lg'
-                                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-2 border-transparent hover:border-emerald-200'
+                                        ? 'bg-amber-400 text-emerald-950 shadow-lg'
+                                        : 'bg-emerald-50 text-emerald-800 border-2 border-transparent group-hover:border-emerald-200'
                                     }
                                 `}>
                                     {app.actionLabel}
                                     <ArrowRight className={`w-5 h-5 ${app.isFlagship ? 'stroke-[3px]' : ''} `} />
-                                </button>
+                                </div>
                             )}
                         </div>
-                    </div>
+                    </button>
                 ))}
             </div>
         </div>

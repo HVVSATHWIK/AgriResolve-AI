@@ -89,6 +89,16 @@ Architecture note: the frontend never talks to Gemini directly. All AI calls go 
   # In production set this to your Render backend URL
   # Example: https://agriresolve-backend.onrender.com
   VITE_API_URL=http://localhost:3001
+
+  # Firebase Configuration (Required for Authentication)
+  # Get these values from your Firebase project settings:
+  # https://console.firebase.google.com/ → Project Settings → General
+  VITE_FIREBASE_API_KEY=your_firebase_api_key_here
+  VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+  VITE_FIREBASE_PROJECT_ID=your_project_id
+  VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+  VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+  VITE_FIREBASE_APP_ID=your_firebase_app_id
   ```
 
   **Backend (Express)** — create `.env` in the project root (used by `server/index.ts`):
@@ -131,7 +141,14 @@ Architecture note: the frontend never talks to Gemini directly. All AI calls go 
 ### Frontend (Vercel)
 - Build command: `npm run build`
 - Output directory: `dist`
-- Env var: `VITE_API_URL=https://<your-render-service>.onrender.com`
+- Env vars:
+  - `VITE_API_URL=https://<your-render-service>.onrender.com`
+  - `VITE_FIREBASE_API_KEY` (from Firebase Console)
+  - `VITE_FIREBASE_AUTH_DOMAIN` (from Firebase Console)
+  - `VITE_FIREBASE_PROJECT_ID` (from Firebase Console)
+  - `VITE_FIREBASE_STORAGE_BUCKET` (from Firebase Console)
+  - `VITE_FIREBASE_MESSAGING_SENDER_ID` (from Firebase Console)
+  - `VITE_FIREBASE_APP_ID` (from Firebase Console)
 
 ### Backend (Render)
 - Uses [render.yaml](render.yaml) (build: `npm run build && npm run build:server`, start: `npm run start:server`)

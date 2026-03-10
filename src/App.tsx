@@ -6,49 +6,59 @@ import { Layout } from './components/Layout';
 import { Simulator } from './pages/Simulator';
 import { MarketPulse } from './pages/MarketPulse'; // Import Market Pulse
 import { ChatAssistant } from './pages/ChatAssistant';
-import { MobileBottomNav } from './components/MobileBottomNav';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { ForgotPassword } from './pages/ForgotPassword';
 import { ChatWidget } from './components/ChatWidget';
+import { AuthProvider } from './contexts/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const App: React.FC = () => {
   // API Key check removed as we now use Backend Proxy.
 
   return (
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <Routes>
-        {/* Simulator Standalone Route */}
-        <Route path="/simulator" element={<Simulator />} />
+    <AuthProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          
+          {/* Simulator Standalone Route - Public for now */}
+          <Route path="/simulator" element={<Simulator />} />
 
-        {/* Global Layout Routes */}
-        <Route
-          path="*"
-          element={
-            <Layout>
-              <div className="min-h-screen font-inter text-gray-900 pb-16 md:pb-0">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/diagnosis" element={<Diagnosis />} />
-                  <Route path="/market" element={<MarketPulse />} />
-                  <Route path="/chat" element={<ChatAssistant />} />
-                  {/* Redirect unknown routes to Dashboard */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+          {/* Protected Routes with Global Layout */}
+          <Route
+            path="*"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <div className="min-h-screen font-inter text-gray-900 pb-16 md:pb-0">
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/diagnosis" element={<Diagnosis />} />
+                      <Route path="/market" element={<MarketPulse />} />
+                      <Route path="/chat" element={<ChatAssistant />} />
+                      {/* Redirect unknown routes to Dashboard */}
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
 
-                {/* Global Bottom Navigation for Mobile */}
-                <MobileBottomNav />
-
-                {/* Chat Widget */}
-                <ChatWidget />
-              </div>
-            </Layout>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+                    {/* Chat Widget */}
+                    <ChatWidget />
+                  </div>
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 

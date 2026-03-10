@@ -5,19 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
-import { OrbitControls, Environment, Sky, ContactShadows, PointerLockControls, Stars, Cloud } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, Environment, Sky, PointerLockControls, Stars, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
-
-// --- 3D Components (Visuals) ---
-// --- 3D Assets (Procedural) ---
-
-// --- High Fidelity Rendering Components ---
-
-// --- Multi-Layer Organic Rendering ---
-
-// --- Multi-Layer Organic Rendering ---
 
 const RainSystem: React.FC<{ count: number, active: boolean }> = ({ count, active }) => {
     const rainGeo = useMemo(() => {
@@ -54,6 +45,19 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolea
     const fruitRef = useRef<THREE.InstancedMesh>(null);
 
     const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    // Pre-compute random rotation offsets (avoids Math.random() in useFrame)
+    const randomOffsets = useMemo(() => {
+        const offsets = new Float32Array(4096); // max possible COUNT
+        for (let i = 0; i < offsets.length; i++) offsets[i] = (Math.random() - 0.5);
+        return offsets;
+    }, []);
+
+    // Cache reusable Color objects to avoid per-frame allocations
+    const baseColor = useMemo(() => new THREE.Color(), []);
+    const foliageColor = useMemo(() => new THREE.Color(), []);
+    const fruitColor = useMemo(() => new THREE.Color(), []);
+    const stressColor = useMemo(() => new THREE.Color("#8d6e63"), []);
 
     // Dynamic Density based on Crop Type
     const { COUNT, GRID_SIZE } = useMemo(() => {
@@ -95,27 +99,29 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolea
     useFrame((state_gl) => {
         const time = state_gl.clock.getElapsedTime();
         const crop = state.crop;
+        const sqrtCount = Math.sqrt(COUNT);
 
         let idx = 0;
-        for (let x = 0; x < Math.sqrt(COUNT); x++) {
-            for (let z = 0; z < Math.sqrt(COUNT); z++) {
-                const xPos = (x / Math.sqrt(COUNT)) * GRID_SIZE - GRID_SIZE / 2;
-                const zPos = (z / Math.sqrt(COUNT)) * GRID_SIZE - GRID_SIZE / 2;
+        for (let x = 0; x < sqrtCount; x++) {
+            for (let z = 0; z < sqrtCount; z++) {
+                const xPos = (x / sqrtCount) * GRID_SIZE - GRID_SIZE / 2;
+                const zPos = (z / sqrtCount) * GRID_SIZE - GRID_SIZE / 2;
 
                 // Wind
                 const wave = Math.sin(time * 1.5 + xPos * 0.3 + zPos * 0.3);
                 const windForce = wave * 0.1 * (crop.height / 100);
+                const rndOffset = randomOffsets[idx % randomOffsets.length];
 
                 // --- STEM ---
                 dummy.position.set(xPos, 0, zPos);
-                dummy.rotation.set(windForce, (Math.random() - 0.5), windForce);
+                dummy.rotation.set(windForce, rndOffset, windForce);
                 const h = Math.max(0.1, crop.height / 20);
                 dummy.scale.set(1, h, 1);
                 dummy.updateMatrix();
                 if (stemRef.current) stemRef.current.setMatrixAt(idx, dummy.matrix);
 
                 // --- FOLIAGE (Leaves flutter more) ---
-                dummy.rotation.set(windForce * 1.5, (Math.random() - 0.5), windForce * 1.5);
+                dummy.rotation.set(windForce * 1.5, rndOffset, windForce * 1.5);
                 // Foliage grows wider
                 if (crop.type === 'COTTON' || crop.type === 'CHILLI') dummy.scale.set(h, h, h);
                 else dummy.scale.set(1, h, 1);
@@ -124,7 +130,7 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolea
 
                 // --- FRUIT (Only if reproductive) ---
                 if (crop.dvs > 1.0) {
-                    dummy.rotation.set(windForce, (Math.random() - 0.5), windForce);
+                    dummy.rotation.set(windForce, rndOffset, windForce);
                     dummy.scale.set(1, 1, 1); // Fruits don't stretch like stems
                     dummy.updateMatrix();
                     if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
@@ -141,23 +147,23 @@ const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolea
         if (foliageRef.current) foliageRef.current.instanceMatrix.needsUpdate = true;
         if (fruitRef.current) fruitRef.current.instanceMatrix.needsUpdate = true;
 
-        // Color Updates
-        const baseColor = new THREE.Color("#4caf50"); // Stem Green
-        const foliageColor = new THREE.Color("#66bb6a"); // Leaf lighter
-        const fruitColor = new THREE.Color("#ffffff");
+        // Color Updates (reuse cached Color objects)
+        baseColor.set("#4caf50");
+        foliageColor.set("#66bb6a");
+        fruitColor.set("#ffffff");
 
         if (crop.type === 'COTTON' && crop.dvs > 1.2) fruitColor.set("#ffffff");
         if (crop.type === 'CHILLI' && crop.dvs > 1.2) fruitColor.set("#d32f2f");
         if (crop.type === 'WHEAT' && crop.dvs > 1.2) { baseColor.set("#eecfa1"); foliageColor.set("#dce775"); fruitColor.set("#ffecb3"); }
 
         if (state.stress.water > 0.4) {
-            baseColor.lerp(new THREE.Color("#8d6e63"), 0.6);
-            foliageColor.lerp(new THREE.Color("#8d6e63"), 0.8); // Leaves die first
+            baseColor.lerp(stressColor, 0.6);
+            foliageColor.lerp(stressColor, 0.8); // Leaves die first
         }
 
-        if (stemRef.current && stemRef.current.material instanceof THREE.MeshStandardMaterial) stemRef.current.material.color = baseColor;
-        if (foliageRef.current && foliageRef.current.material instanceof THREE.MeshStandardMaterial) foliageRef.current.material.color = foliageColor;
-        if (fruitRef.current && fruitRef.current.material instanceof THREE.MeshStandardMaterial) fruitRef.current.material.color = fruitColor;
+        if (stemRef.current && stemRef.current.material instanceof THREE.MeshStandardMaterial) stemRef.current.material.color.copy(baseColor);
+        if (foliageRef.current && foliageRef.current.material instanceof THREE.MeshStandardMaterial) foliageRef.current.material.color.copy(foliageColor);
+        if (fruitRef.current && fruitRef.current.material instanceof THREE.MeshStandardMaterial) fruitRef.current.material.color.copy(fruitColor);
     });
 
     const isRaining = state.weather.rain > 5;
@@ -210,7 +216,6 @@ const ScoutCamera: React.FC = () => {
     const moveBackward = useRef(false);
     const moveLeft = useRef(false);
     const moveRight = useRef(false);
-    const velocity = useRef(new THREE.Vector3());
     const direction = useRef(new THREE.Vector3());
 
     useEffect(() => {
@@ -342,7 +347,7 @@ export const Simulator: React.FC = () => {
 
     // Auto-Run Effect
     useEffect(() => {
-        let interval: any;
+        let interval: ReturnType<typeof setInterval> | undefined;
         if (isPlaying) {
             interval = setInterval(() => {
                 const newState = engine.nextDay({});
@@ -558,13 +563,15 @@ export const Simulator: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Controls Hint - Hidden on mobile to save space or reduced */}
-                <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 text-white px-3 py-1 rounded text-xs mt-2 text-center pointer-events-auto z-0">
-                    {isMobile ?
-                        <b>SCOUT MODE: Use On-Screen Controls</b> :
-                        <b>SCOUT MODE: Click to Focus • WASD to Move • ESC to Exit</b>
-                    }
-                </div>
+                {/* Controls Hint - Only show in Scout mode */}
+                {cameraMode === 'SCOUT' && (
+                    <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-xl text-xs mt-2 text-center pointer-events-none z-10 border border-white/10">
+                        {isMobile ?
+                            <b>Use On-Screen Controls to Move</b> :
+                            <b>Click to Focus &bull; WASD to Move &bull; ESC to Exit</b>
+                        }
+                    </div>
+                )}
 
 
                 {/* 3D Canvas */}

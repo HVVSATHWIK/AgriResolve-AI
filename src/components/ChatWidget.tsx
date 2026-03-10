@@ -6,9 +6,13 @@ export const ChatWidget: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [location, setLocation] = useState<string | null>(null);
     const [isLocating, setIsLocating] = useState(false);
+    const [hasRequestedLocation, setHasRequestedLocation] = useState(false);
 
-    // Get Location on mount
+    // Get Location only when chat is first opened
     useEffect(() => {
+        if (!isOpen || hasRequestedLocation) return;
+        setHasRequestedLocation(true);
+
         if ("geolocation" in navigator) {
             setIsLocating(true);
             navigator.geolocation.getCurrentPosition(
@@ -48,7 +52,7 @@ export const ChatWidget: React.FC = () => {
         } else {
             setLocation("Geolocation not supported by this browser.");
         }
-    }, []);
+    }, [isOpen, hasRequestedLocation]);
 
     const { messages, isLoading, sendMessage } = useAIChat(null, location);
     const [inputValue, setInputValue] = useState('');
@@ -77,7 +81,7 @@ export const ChatWidget: React.FC = () => {
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
             {isOpen && (
-                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90vw] md:w-[400px] h-[500px] flex flex-col overflow-hidden animate-fade-in mb-2">
+                <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90vw] md:w-[400px] h-[70vh] max-h-[500px] flex flex-col overflow-hidden animate-fade-in mb-2" role="dialog" aria-label="Chat assistant">
                     {/* Header */}
                     <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
                         <div className="flex flex-col">
@@ -95,6 +99,7 @@ export const ChatWidget: React.FC = () => {
                         <button
                             onClick={() => setIsOpen(false)}
                             className="p-1 hover:bg-emerald-700 rounded-lg transition-colors"
+                            aria-label="Close chat"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -114,7 +119,7 @@ export const ChatWidget: React.FC = () => {
                                     ? 'bg-emerald-600 text-white rounded-br-none'
                                     : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none shadow-sm'
                                     }`}>
-                                    <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
+                                    <div className="whitespace-pre-wrap">{msg.text}</div>
                                 </div>
                             </div>
                         ))}
@@ -150,6 +155,7 @@ export const ChatWidget: React.FC = () => {
 
             <button
                 onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
                 className={`p-4 rounded-full shadow-xl transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center ${isOpen
                     ? 'bg-gray-700 text-white'
                     : 'bg-emerald-600 text-white hover:bg-emerald-700'

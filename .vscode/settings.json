@@ -1,5 +1,6 @@
 {
   "kiroAgent.configureMCP": "Disabled",
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.autoClosingTags": false
 }
