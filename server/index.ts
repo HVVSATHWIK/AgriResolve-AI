@@ -33,6 +33,8 @@ const io = new SocketIOServer(server, {
       process.env.FRONTEND_URL,
       'https://agri-resolve-ai-app.vercel.app',
       'https://agri-resolve-ai.vercel.app',
+      'https://agriresolve-ai-735b2.web.app',
+      'https://agriresolve-ai-735b2.firebaseapp.com',
       'http://localhost:5173',
       'http://localhost:3000',
     ].filter(Boolean) as string[],
@@ -64,6 +66,8 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://agri-resolve-ai-app.vercel.app',  // primary deployed frontend
   'https://agri-resolve-ai.vercel.app',      // legacy / alternate URL
+  'https://agriresolve-ai-735b2.web.app',    // firebase hosting
+  'https://agriresolve-ai-735b2.firebaseapp.com', // firebase hosting (alternate)
   'http://localhost:5173',
   'http://localhost:3000',
 ].filter(Boolean) as string[];

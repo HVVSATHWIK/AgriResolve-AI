@@ -16,6 +16,8 @@ import {
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -27,6 +29,7 @@ export interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string) => Promise<UserCredential>;
   signIn: (email: string, password: string) => Promise<UserCredential>;
+  signInWithGoogle: () => Promise<UserCredential>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -104,6 +107,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   /**
+   * Sign in with Google
+   * @returns Promise resolving to UserCredential
+   * @throws {Error} With descriptive message if signin fails
+   */
+  const signInWithGoogle = async (): Promise<UserCredential> => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      return userCredential;
+    } catch (error: unknown) {
+      // Re-throw with descriptive error message
+      if (error instanceof Error && error.message.includes('popup-closed-by-user')) {
+        throw new Error('Google sign-in was cancelled.');
+      }
+      throw new Error(getErrorMessage(error, 'Failed to sign in with Google'));
+    }
+  };
+
+  /**
    * Sign out the current user
    * @returns Promise resolving when signout is complete
    * @throws {Error} With descriptive message if signout fails
@@ -159,6 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut,
     resetPassword,
   };
