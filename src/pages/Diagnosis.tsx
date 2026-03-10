@@ -11,7 +11,7 @@ import { CompareView } from '../features/history/components/CompareView';
 import { AssistantWidget } from '../features/assistant/components/AssistantWidget';
 import { BioNetworkScene } from '../features/visualization/components/BioNetworkScene';
 import { Upload, AlertCircle, FileText, CheckCircle2, Camera as CameraIcon } from 'lucide-react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+
 import { motion } from 'framer-motion';
 
 import { useTranslation } from 'react-i18next';
