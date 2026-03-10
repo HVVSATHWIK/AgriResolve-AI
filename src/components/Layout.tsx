@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HistorySidebar } from '../features/history/components/HistorySidebar';
 import { CropAnalysisRecord } from '../features/history/types';
-import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, ArrowLeft, LogOut, User } from 'lucide-react';
+import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin } from 'lucide-react';
 import { InsightsDashboard } from '../features/assistant/components/InsightsDashboard';
 import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
 import { useTranslation } from 'react-i18next';
@@ -24,10 +24,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
   const [showHistory, setShowHistory] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { currentUser, signOut } = useAuth();
+  const mainRef = useRef<HTMLElement>(null);
 
-  // Dark Mode removed as per request
-
-
+  // Scroll main content to top on route change
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [location.pathname]);
 
   // V4.1: Real Season Logic (Reality Check)
   const seasonInfo = React.useMemo(() => {
@@ -65,19 +69,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
   }, []);
 
 
-
-
   return (
-    <div className="min-h-screen flex flex-col md:flex-row font-inter relative overflow-hidden bg-[#f0f4f2]">
-      {/* V4.1 Cleanup: Removed global background image/gradients. Now clean #f0f4f2 */}
+    <div className="min-h-screen md:h-screen flex flex-col md:flex-row font-inter relative overflow-x-hidden md:overflow-hidden bg-[#f0f4f2]">
 
       {/* Content Wrapper */}
-      <div className="relative z-10 flex flex-col md:flex-row w-full">
+      <div className="relative z-0 flex flex-col md:flex-row w-full md:h-screen">
 
         {/* Mobile Header (Visible only on small screens) */}
-        <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40 shadow-sm safe-area-inset-top">
+        <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40 shadow-sm safe-area-inset-top shrink-0">
           <div className="flex items-center gap-2" onClick={() => navigate('/')}>
-            {/* Simple Logo */}
             <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-gray-100 overflow-hidden">
               <img src="/logo.png" alt="AgriResolve" className="w-full h-full object-contain" />
             </div>
@@ -99,15 +99,29 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
           />
         )}
 
-        {/* Sidebar - Clean, High Contrast "Field-First" Design */}
+        {/* ═══════════════════════════════════════════════════════════════
+            SIDEBAR — h-screen flex flex-col
+            ┌─────────────────────┐
+            │  Header (shrink-0)  │
+            ├─────────────────────┤
+            │                     │
+            │  Scrollable Content │ ← flex-1 overflow-y-auto
+            │  (Nav, Season)      │
+            │                     │
+            ├─────────────────────┤
+            │  Bottom Pinned      │ ← mt-auto shrink-0
+            │  (Insights, User,   │
+            │   Copyright)        │
+            └─────────────────────┘
+        ═══════════════════════════════════════════════════════════════ */}
         <aside className={`
-          fixed md:sticky top-0 left-0 h-screen w-[280px] md:w-80 bg-white border-r border-gray-200 
+          fixed md:sticky top-0 left-0 h-screen w-[280px] md:w-80 bg-white border-r border-gray-200
           text-gray-900 flex flex-col shadow-2xl md:shadow-none z-50 transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
 
-          {/* 1. Header & Identity */}
-          <div className="p-6 border-b border-gray-100 bg-white cursor-pointer relative" onClick={() => navigate('/')}>
+          {/* ── Header & Identity (fixed at top) ── */}
+          <div className="shrink-0 p-5 border-b border-gray-100 bg-white cursor-pointer relative" onClick={() => navigate('/')}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <img src="/logo.png" alt="AgriResolve Logo" className="w-full h-full object-contain" />
@@ -117,34 +131,24 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Assistant</span>
               </div>
             </div>
-            {/* Close Button for Mobile */}
             <button onClick={(e) => { e.stopPropagation(); setIsMobileMenuOpen(false); }} className="md:hidden absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600">
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Scrollable Area */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 px-4 py-6 space-y-8">
+          {/* ── Scrollable Middle Section ── */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 px-4 py-5 space-y-6">
 
-            {/* 2. Quick Actions */}
-            <div className="space-y-2">
+            {/* Navigation */}
+            <div className="space-y-1.5">
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Navigation</h3>
-              {location.pathname !== '/' && (
-                <button
-                  onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50 mb-2 border border-transparent hover:border-gray-200 transition-all"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="text-sm font-bold">{t('back_to_hub', 'Back to Hub')}</span>
-                </button>
-              )}
 
               <button
                 onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'} `}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
-                <span className="text-sm">{t('nav_home', 'Command Center')}</span>
+                <span className="text-sm">{t('nav_home', 'Hub')}</span>
               </button>
 
               <button
@@ -153,19 +157,32 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                   navigate('/diagnosis');
                   setIsMobileMenuOpen(false);
                 }}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-white p-3 rounded-xl shadow-lg shadow-emerald-900/10 transition-all active:scale-95 group mt-4"
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/diagnosis' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
               >
-                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                <span className="font-bold text-sm tracking-wide">{t('new_scan', { defaultValue: 'New Analysis' })}</span>
+                <Plus className="w-4 h-4" />
+                <span className="text-sm">{t('new_scan', { defaultValue: 'New Analysis' })}</span>
               </button>
             </div>
 
-            {/* 3. Active Season (Real Logic, Clean UI) */}
+            {/* CTA Button */}
+            <button
+              onClick={() => {
+                if (onNewAnalysis) onNewAnalysis();
+                navigate('/diagnosis');
+                setIsMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-white p-3 rounded-xl shadow-lg shadow-emerald-900/10 transition-all active:scale-95 group"
+            >
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
+              <span className="font-bold text-sm tracking-wide">{t('new_scan', { defaultValue: 'New Analysis' })}</span>
+            </button>
+
+            {/* Current Season */}
             <div>
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Current Season</h3>
-              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)]">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-bold text-gray-800 mb-0.5">{seasonInfo.name} {seasonInfo.year}</h3>
+                  <h3 className="text-base font-bold text-gray-800">{seasonInfo.name} {seasonInfo.year}</h3>
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-100">
                     <Sun className="w-3 h-3 text-emerald-600" />
                     <span className="text-[10px] font-bold text-emerald-700">
@@ -174,21 +191,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                   </div>
                 </div>
 
-                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden flex mb-2">
-                  <div className="bg-emerald-500 rounded-full" style={{ width: `${Math.min((seasonInfo.days / 120) * 100, 100)}%` }} />
+                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden flex mb-2">
+                  <div className="bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${Math.min((seasonInfo.days / 120) * 100, 100)}%` }} />
                 </div>
 
                 <div className="flex justify-between text-[10px] font-medium text-gray-400">
                   <span>Sowing</span>
-                  <span className="text-emerald-700 font-bold">
-                    Day {seasonInfo.days}
-                  </span>
+                  <span className="text-emerald-700 font-bold">Day {seasonInfo.days}</span>
                   <span>Harvest</span>
                 </div>
               </div>
             </div>
 
-            {/* 4. Insights Dashboard (Field Monitor) */}
+            {/* AI Insights */}
             <div>
               <div className="flex items-center justify-between px-1 mb-2">
                 <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
@@ -197,7 +212,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                 {consent !== 'granted' && (
                   <button
                     onClick={() => requestPermission()}
-                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700"
+                    className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700"
                   >
                     {t('enable', { defaultValue: 'Enable' })}
                   </button>
@@ -207,13 +222,19 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
               {consent === 'granted' && locationName?.displayName ? (
                 <InsightsDashboard locationName={locationName.displayName} />
               ) : (
-                <div className="text-center p-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                  <p className="text-xs text-gray-400 font-medium">{t('enable_loc_msg', { defaultValue: 'Enable location for local insights.' })}</p>
-                </div>
+                <button
+                  onClick={() => requestPermission()}
+                  className="w-full text-center p-3 rounded-xl bg-gray-50 border border-gray-100 hover:bg-emerald-50 hover:border-emerald-100 transition-colors group cursor-pointer"
+                >
+                  <MapPin className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 mx-auto mb-1.5 transition-colors" />
+                  <p className="text-[11px] text-gray-400 group-hover:text-emerald-700 font-medium transition-colors">
+                    {t('enable_loc_msg', { defaultValue: 'Enable location for local insights' })}
+                  </p>
+                </button>
               )}
             </div>
 
-            {/* 5. History (Collapsible) */}
+            {/* History (Collapsible) */}
             <div>
               <button
                 onClick={() => setShowHistory(!showHistory)}
@@ -241,42 +262,62 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
 
           </div>
 
-          {/* 6. User Profile & Logout */}
-          {currentUser && (
-            <div className="mt-auto px-4 pb-4 shrink-0">
-              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 overflow-hidden flex-1">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
-                    <User className="w-4 h-4" />
+          {/* ── Bottom Pinned Section ── */}
+          <div className="shrink-0 border-t border-gray-100 bg-white">
+            {currentUser && (
+              <div className="px-3 pt-3 pb-2">
+                <div className="group rounded-xl p-2.5 flex items-center gap-3 hover:bg-gray-50 transition-all duration-200 cursor-default">
+                  {/* Avatar with online indicator */}
+                  <div className="relative shrink-0">
+                    {currentUser.photoURL ? (
+                      <img
+                        src={currentUser.photoURL}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-100 ring-offset-1"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold text-sm ring-2 ring-emerald-100 ring-offset-1">
+                        {(currentUser.displayName ?? currentUser.email ?? 'U')[0].toUpperCase()}
+                      </div>
+                    )}
+                    {/* Online status dot */}
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                   </div>
-                  <div className="truncate pr-2">
-                    <p className="text-xs font-bold text-gray-900 truncate">{currentUser.email}</p>
-                    <p className="text-[10px] text-gray-400 truncate">Authenticated User</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    signOut().then(() => navigate('/login'));
-                  }}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                  aria-label="Logout"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
 
-          {/* Footer - Copyright */}
-          <div className="p-4 border-t border-gray-100 bg-white text-center">
-            <p className="text-[10px] text-gray-400 font-medium">© 2026 AgriResolve AI</p>
+                  {/* User Info */}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-gray-900 truncate leading-tight">
+                      {currentUser.displayName ?? currentUser.email?.split('@')[0]}
+                    </p>
+                    <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
+                      {currentUser.email}
+                    </p>
+                  </div>
+
+                  {/* Logout */}
+                  <button
+                    onClick={() => {
+                      signOut().then(() => navigate('/login'));
+                    }}
+                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 shrink-0"
+                    aria-label="Sign out"
+                    title="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Copyright */}
+            <div className="px-4 py-2 text-center border-t border-gray-50">
+              <p className="text-[10px] text-gray-300 font-medium tracking-wide">© 2026 AgriResolve AI</p>
+            </div>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10 bg-transparent pt-20 md:pt-6 pb-24 md:pb-8 safe-area-inset-top safe-area-inset-bottom">
-          {/* Restricted max-width for better reading experience on ultra-wide */}
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative bg-transparent pt-20 md:pt-6 pb-24 md:pb-8 safe-area-inset-top safe-area-inset-bottom">
           <div className="max-w-7xl mx-auto h-full flex flex-col">
             {children}
           </div>
