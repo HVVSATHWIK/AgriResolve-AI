@@ -79,7 +79,7 @@ export const ChatWidget: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        <div className="hidden md:flex fixed bottom-6 right-6 z-50 flex-col items-end gap-2">
             {isOpen && (
                 <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90vw] md:w-[400px] h-[70vh] max-h-[500px] flex flex-col overflow-hidden animate-fade-in mb-2" role="dialog" aria-label="Chat assistant">
                     {/* Header */}

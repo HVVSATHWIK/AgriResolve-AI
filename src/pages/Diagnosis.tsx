@@ -272,37 +272,8 @@ export const Diagnosis: React.FC = () => {
     };
 
     const handleTakePhoto = async () => {
-        try {
-            const image = await Camera.getPhoto({
-                quality: 80,
-                allowEditing: false,
-                resultType: CameraResultType.DataUrl,
-                source: CameraSource.Camera
-            });
-
-            if (image.dataUrl) {
-                // Convert dataUrl to a File object for the pipeline
-                const response = await fetch(image.dataUrl);
-                const blob = await response.blob();
-                const file = new File([blob], "camera_photo.jpg", { type: "image/jpeg" });
-
-                const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
-                if (file.size > MAX_IMAGE_BYTES) {
-                    setError(t('file_too_large', { defaultValue: 'Image file is too large. Please capture a smaller photo.' }));
-                    setStatus(AssessmentStatus.ERROR);
-                    return;
-                }
-
-                setImage(image.dataUrl);
-                startAssessment(image.dataUrl, file);
-            }
-        } catch (error: unknown) {
-            console.error("Camera Error:", error);
-            const errorMessage = error instanceof Error ? error.message : '';
-            if (errorMessage !== "User cancelled photos app" && !errorMessage.includes("cancelled")) {
-                setError("Failed to access camera. Please check permissions or use standard upload.");
-            }
-        }
+        // Find the hidden capture input and click it
+        document.getElementById('camera-capture')?.click();
     };
 
     const startAssessment = async (img: string, file: File) => {
@@ -491,23 +462,34 @@ export const Diagnosis: React.FC = () => {
                                         Take Photo
                                     </button>
 
-                                    <label className="relative inline-flex group cursor-pointer transform hover:-translate-y-1 transition-transform duration-200">
-                                        <div className={`absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r ${theme.uploadGradient} rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt`}></div>
-                                        <button
-                                            onClick={() => document.getElementById('file-upload')?.click()}
-                                            className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-gray-800 hover:bg-gray-900 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 backdrop-blur-sm shadow-xl"
-                                        >
-                                            <Upload className="w-5 h-5 mr-2" />
-                                            Upload File
-                                        </button>
+                                        {/* Hidden Input for Take Photo (Forces Camera) */}
                                         <input
-                                            id="file-upload"
+                                            id="camera-capture"
                                             type="file"
                                             className="hidden"
                                             accept="image/*"
+                                            capture="environment"
                                             onChange={handleImageUpload}
                                         />
-                                    </label>
+
+                                        <label className="relative inline-flex group cursor-pointer transform hover:-translate-y-1 transition-transform duration-200">
+                                            <div className={`absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r ${theme.uploadGradient} rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt`}></div>
+                                            <button
+                                                onClick={() => document.getElementById('file-upload')?.click()}
+                                                className="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-gray-800 hover:bg-gray-900 font-pj rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 backdrop-blur-sm shadow-xl"
+                                            >
+                                                <Upload className="w-5 h-5 mr-2" />
+                                                Upload Gallery
+                                            </button>
+                                            {/* Hidden Input for Gallery (No Capture Attribute) */}
+                                            <input
+                                                id="file-upload"
+                                                type="file"
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                            />
+                                        </label>
                                 </div>
                             </motion.div>
                         )}
