@@ -296,9 +296,10 @@ export const Diagnosis: React.FC = () => {
                 setImage(image.dataUrl);
                 startAssessment(image.dataUrl, file);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Camera Error:", error);
-            if (error.message !== "User cancelled photos app" && !error.message.includes("cancelled")) {
+            const errorMessage = error instanceof Error ? error.message : '';
+            if (errorMessage !== "User cancelled photos app" && !errorMessage.includes("cancelled")) {
                 setError("Failed to access camera. Please check permissions or use standard upload.");
             }
         }

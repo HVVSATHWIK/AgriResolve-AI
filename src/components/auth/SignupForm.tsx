@@ -128,8 +128,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
 
             // Navigate to dashboard automatically upon success
             navigate('/', { replace: true });
-        } catch (err: any) {
-            const errorMessage = mapAuthError(err.message);
+        } catch (err: unknown) {
+            const errorMessage = mapAuthError(err instanceof Error ? err.message : '');
             setError(errorMessage);
         } finally {
             setLoading(false);

@@ -57,10 +57,11 @@ export const ForgotPassword: React.FC = () => {
       await resetPassword(email);
       setSuccess(true);
       setEmail('');
-    } catch (err: any) {
-      if (err.message.includes('user-not-found')) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '';
+      if (errorMessage.includes('user-not-found')) {
         setError('No account found with this email address');
-      } else if (err.message.includes('invalid-email')) {
+      } else if (errorMessage.includes('invalid-email')) {
         setError('Please enter a valid email address');
       } else {
         setError('Failed to send reset email. Please try again');
@@ -96,7 +97,7 @@ export const ForgotPassword: React.FC = () => {
         )}
 
         <p className="text-sm text-gray-600">
-          Enter your email address and we'll send you a link to reset your password.
+          Enter your email address and we&apos;ll send you a link to reset your password.
         </p>
 
         {/* Email Field */}

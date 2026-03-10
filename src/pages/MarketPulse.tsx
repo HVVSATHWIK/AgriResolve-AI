@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { TrendingUp, Activity, AlertTriangle, Leaf, Droplets, IndianRupee, LineChart, Target } from 'lucide-react';
+import { TrendingUp, Activity, AlertTriangle, Leaf, IndianRupee, LineChart, Target } from 'lucide-react';
 import { config } from '../config';
 
 // --- Data Interfaces ---
@@ -71,7 +71,7 @@ const Ticker = ({ prices }: { prices: MarketPrice[] }) => {
 };
 
 export const MarketPulse: React.FC = () => {
-    const { t } = useTranslation();
+    useTranslation();
     const [prices, setPrices] = useState<MarketPrice[]>([]);
     const [loadingPrices, setLoadingPrices] = useState(false);
     const [loadingRecommend, setLoadingRecommend] = useState(false);

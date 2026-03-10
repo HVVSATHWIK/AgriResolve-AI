@@ -55,6 +55,10 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  return error instanceof Error && error.message ? error.message : fallback;
+};
+
 /**
  * Authentication Provider Component
  * 
@@ -76,9 +80,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       return userCredential;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw with descriptive error message
-      throw new Error(error.message || 'Failed to create account');
+      throw new Error(getErrorMessage(error, 'Failed to create account'));
     }
   };
 
@@ -93,9 +97,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       return userCredential;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw with descriptive error message
-      throw new Error(error.message || 'Failed to sign in');
+      throw new Error(getErrorMessage(error, 'Failed to sign in'));
     }
   };
 
@@ -107,9 +111,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async (): Promise<void> => {
     try {
       await firebaseSignOut(auth);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw with descriptive error message
-      throw new Error(error.message || 'Failed to sign out');
+      throw new Error(getErrorMessage(error, 'Failed to sign out'));
     }
   };
 
@@ -122,9 +126,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetPassword = async (email: string): Promise<void> => {
     try {
       await sendPasswordResetEmail(auth, email);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Re-throw with descriptive error message
-      throw new Error(error.message || 'Failed to send password reset email');
+      throw new Error(getErrorMessage(error, 'Failed to send password reset email'));
     }
   };
 

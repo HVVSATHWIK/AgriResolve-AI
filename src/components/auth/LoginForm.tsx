@@ -24,6 +24,12 @@ export interface LoginFormProps {
   onSuccess?: () => void;
 }
 
+interface LoginLocationState {
+  from?: {
+    pathname?: string;
+  };
+}
+
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -103,11 +109,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
 
       // Redirect to intended destination or dashboard
-      const from = (location.state as any)?.from?.pathname || '/';
+      const from = (location.state as LoginLocationState | null)?.from?.pathname || '/';
       navigate(from, { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Map Firebase errors to user-friendly messages
-      const errorMessage = mapAuthError(err.message);
+      const errorMessage = mapAuthError(err instanceof Error ? err.message : '');
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -324,7 +330,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       {/* Sign Up Link */}
       <div className="text-center pt-2">
         <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{' '}
           <Link
             to="/signup"
             className="
