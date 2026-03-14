@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Activity, Sprout, TrendingUp, Scan } from 'lucide-react';
+import { ArrowRight, Sprout, TrendingUp, Scan } from 'lucide-react';
 import { HistoryService } from '../features/history/services/HistoryService';
+import { AgriTwinMark } from '../components/AgriTwinMark';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -45,7 +46,7 @@ export const Dashboard: React.FC = () => {
             title: t('app_agritwin_title', 'Farm Simulator'),
             desc: t('app_agritwin_desc', 'Risk-free farming simulator'),
             actionLabel: t('action_simulate', 'Simulate Farm'),
-            icon: Activity,
+            icon: AgriTwinMark,
             action: () => navigate('/simulator'),
             status: 'Active',
             isFlagship: false

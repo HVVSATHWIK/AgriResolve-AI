@@ -57,7 +57,7 @@ export class AgriTwinEngine {
 
         // 0. Handle Manual Actions (Weeding / Harvest)
         if (actions.harvest) {
-            this.harvest(actions.newCrop || 'RICE');
+            this.harvest(actions.newCrop || this.state.crop.type);
             return { ...this.state }; // Return immediately after harvest/reset
         }
 

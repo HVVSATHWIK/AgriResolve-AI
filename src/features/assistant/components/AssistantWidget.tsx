@@ -102,7 +102,7 @@ export const AssistantWidget: React.FC<AssistantWidgetProps> = ({ data }) => {
     }, [isOpen, stopSpeaking]);
 
     return (
-        <div className="hidden md:flex fixed bottom-24 md:bottom-6 right-6 z-50 flex-col items-end safe-area-inset-bottom">
+        <div className="fixed bottom-[90px] md:bottom-6 right-6 z-[60] flex flex-col items-end safe-area-inset-bottom">
 
             {/* Chat Window */}
             {isOpen && (

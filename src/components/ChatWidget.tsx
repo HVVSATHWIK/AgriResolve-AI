@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, MapPin, Loader2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAIChat } from '../features/assistant/hooks/useAIChat';
 
 export const ChatWidget: React.FC = () => {
@@ -78,8 +79,13 @@ export const ChatWidget: React.FC = () => {
         }
     };
 
+    const routerLocation = useLocation();
+    if (routerLocation.pathname === '/diagnosis' || routerLocation.pathname === '/chat') {
+        return null;
+    }
+
     return (
-        <div className="hidden md:flex fixed bottom-6 right-6 z-50 flex-col items-end gap-2">
+        <div className="fixed bottom-[90px] md:bottom-6 right-6 z-[60] flex flex-col items-end gap-2">
             {isOpen && (
                 <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-[90vw] md:w-[400px] h-[70vh] max-h-[500px] flex flex-col overflow-hidden animate-fade-in mb-2" role="dialog" aria-label="Chat assistant">
                     {/* Header */}

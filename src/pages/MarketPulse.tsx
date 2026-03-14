@@ -129,6 +129,7 @@ export const MarketPulse: React.FC = () => {
         try {
             setError(null);
             setLoadingRecommend(true);
+
             const response = await fetch(`${config.apiUrl}/market/recommend`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -164,17 +165,19 @@ export const MarketPulse: React.FC = () => {
     }, [recommendResult]);
 
     return (
-        <div className="pb-20">
-            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-100">
-                <Ticker prices={prices.length ? prices : [{ id: 'fallback', commodity: 'Loading', state: 'India', market: 'APMC', min_price: 0, max_price: 0, modal_price: 0, date: new Date().toISOString() }]} />
-                <div className="p-4 flex justify-between items-center max-w-5xl mx-auto">
-                    <div>
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent flex items-center gap-2">
-                            <Activity className="text-emerald-700" /> AgriWise Crop Advisor
+        <div className="pb-24">
+            {/* Sticky header */}
+            <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-100">
+                <Ticker prices={prices.length ? prices : [{ id: 'fallback', commodity: 'Loading…', state: 'India', market: 'APMC', min_price: 0, max_price: 0, modal_price: 0, date: new Date().toISOString() }]} />
+                <div className="px-3 py-2.5 sm:p-4 flex justify-between items-center max-w-5xl mx-auto">
+                    <div className="min-w-0">
+                        <h1 className="text-base sm:text-2xl font-black bg-gradient-to-r from-emerald-700 to-teal-600 bg-clip-text text-transparent flex items-center gap-1.5 sm:gap-2 truncate">
+                            <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 shrink-0" />
+                            <span className="truncate">AgriWise Crop Advisor</span>
                         </h1>
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Real-time Market + Weather + Rule-based Ranking</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">Market + Weather Intelligence</p>
                     </div>
-                    <div className="text-right hidden md:block">
+                    <div className="text-right hidden md:block shrink-0">
                         <div className="text-sm font-bold text-gray-800">data.gov.in Integrated</div>
                         <div className="text-xs text-green-600 flex items-center justify-end gap-1">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live
@@ -183,135 +186,154 @@ export const MarketPulse: React.FC = () => {
                 </div>
             </div>
 
-            <main className="max-w-5xl mx-auto p-4 space-y-8">
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Target className="w-5 h-5 text-emerald-700" />
-                            <h2 className="text-lg font-bold text-gray-800">Crop Planning Recommendation</h2>
+            <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 space-y-5 sm:space-y-8">
+                {/* Form + Snapshot Section */}
+                <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                    <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-3.5 sm:p-5">
+                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700" />
+                            <h2 className="text-sm sm:text-lg font-bold text-gray-800">Crop Planning</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <label className="text-sm font-medium text-gray-700">
-                                Field Size
-                                <input type="number" min={0.1} step={0.1} value={form.fieldSize} onChange={(e) => setForm((p) => ({ ...p, fieldSize: Number(e.target.value) }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                        <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
+                                Field Size (acres)
+                                <input type="number" min={0.1} step={0.1} value={form.fieldSize} onChange={(e) => setForm((p) => ({ ...p, fieldSize: Number(e.target.value) }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm" />
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 Soil Type
-                                <select value={form.soilType} onChange={(e) => setForm((p) => ({ ...p, soilType: e.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2">
+                                <select value={form.soilType} onChange={(e) => setForm((p) => ({ ...p, soilType: e.target.value }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm">
                                     {SOIL_TYPES.map((soil) => <option key={soil} value={soil}>{soil}</option>)}
                                 </select>
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 State
-                                <input value={form.state} onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                                <input value={form.state} onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm" />
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 District
-                                <input value={form.district} onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                                <input value={form.district} onChange={(e) => setForm((p) => ({ ...p, district: e.target.value }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm" />
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 Season
-                                <select value={form.season} onChange={(e) => setForm((p) => ({ ...p, season: e.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2">
+                                <select value={form.season} onChange={(e) => setForm((p) => ({ ...p, season: e.target.value }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm">
                                     {SEASONS.map((season) => <option key={season} value={season}>{season}</option>)}
                                 </select>
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 Irrigation
-                                <select value={form.irrigation} onChange={(e) => setForm((p) => ({ ...p, irrigation: e.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2">
+                                <select value={form.irrigation} onChange={(e) => setForm((p) => ({ ...p, irrigation: e.target.value }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm">
                                     {IRRIGATION_LEVELS.map((level) => <option key={level} value={level}>{level}</option>)}
                                 </select>
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 Latitude
-                                <input type="number" step={0.0001} value={form.latitude} onChange={(e) => setForm((p) => ({ ...p, latitude: Number(e.target.value) }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                                <input type="number" step={0.0001} value={form.latitude} onChange={(e) => setForm((p) => ({ ...p, latitude: Number(e.target.value) }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm" />
                             </label>
 
-                            <label className="text-sm font-medium text-gray-700">
+                            <label className="text-xs sm:text-sm font-medium text-gray-700">
                                 Longitude
-                                <input type="number" step={0.0001} value={form.longitude} onChange={(e) => setForm((p) => ({ ...p, longitude: Number(e.target.value) }))} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2" />
+                                <input type="number" step={0.0001} value={form.longitude} onChange={(e) => setForm((p) => ({ ...p, longitude: Number(e.target.value) }))} className="mt-1 w-full rounded-lg sm:rounded-xl border border-gray-200 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm" />
                             </label>
                         </div>
 
-                        <div className="mt-5 flex items-center gap-3">
+                        <div className="mt-4 sm:mt-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                             <button
                                 onClick={handleRecommend}
                                 disabled={loadingRecommend}
-                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 text-white px-5 py-3 font-semibold hover:bg-emerald-800 disabled:opacity-60"
+                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 text-white px-5 py-2.5 sm:py-3 font-semibold text-sm sm:text-base hover:bg-emerald-800 disabled:opacity-60 transition-colors"
                             >
                                 <Leaf className="w-4 h-4" />
-                                {loadingRecommend ? 'Computing Recommendation...' : 'Get Recommendation'}
+                                {loadingRecommend ? 'Computing…' : 'Get Recommendation'}
                             </button>
-                            {error && <span className="text-sm text-red-600">{error}</span>}
+                            {error && <span className="text-xs sm:text-sm text-red-600 leading-tight">{error}</span>}
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl text-white p-5">
-                        <h3 className="text-sm uppercase tracking-widest text-slate-300 font-bold">Live Snapshot</h3>
-                        <div className="mt-4 space-y-3">
-                            <div className="flex items-center gap-2 text-slate-200"><TrendingUp className="w-4 h-4" /> {loadingPrices ? 'Loading market feed...' : `${prices.length} mandi records`}</div>
-                            {weatherSummary?.map((item) => (
-                                <div key={item.label} className="rounded-lg bg-white/10 px-3 py-2 flex justify-between text-sm">
-                                    <span>{item.label}</span>
-                                    <span className="font-semibold">{item.value}</span>
+                    {/* Live Snapshot Sidebar */}
+                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl text-white p-4 sm:p-5">
+                        <h3 className="text-xs sm:text-sm uppercase tracking-widest text-slate-300 font-bold">Live Snapshot</h3>
+                        <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
+                            <div className="flex items-center gap-2 text-slate-200 text-sm">
+                                <TrendingUp className="w-4 h-4 shrink-0" />
+                                {loadingPrices ? 'Loading market feed…' : `${prices.length} mandi records`}
+                            </div>
+                            {weatherSummary ? (
+                                <div className="grid grid-cols-3 sm:grid-cols-1 gap-2">
+                                    {weatherSummary.map((item) => (
+                                        <div key={item.label} className="rounded-lg bg-white/10 px-2.5 py-2 flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm text-center sm:text-left">
+                                            <span className="text-slate-400 sm:text-white">{item.label}</span>
+                                            <span className="font-semibold">{item.value}</span>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                            {!weatherSummary && <div className="text-sm text-slate-300">Submit the form to see weather + market intelligence.</div>}
+                            ) : (
+                                <div className="text-xs sm:text-sm text-slate-400">Submit the form to see weather + market intelligence.</div>
+                            )}
                         </div>
                     </div>
                 </section>
 
+                {/* Recommendations */}
                 <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <LineChart className="w-5 h-5 text-gray-700" />
-                        <h2 className="text-lg font-bold text-gray-800">Top 3 Crop Recommendations</h2>
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                        <LineChart className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                        <h2 className="text-sm sm:text-lg font-bold text-gray-800">Top 3 Crop Recommendations</h2>
                     </div>
 
                     {!hasResults && (
-                        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500">
+                        <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 text-center text-gray-500 text-sm">
                             Fill the form above and click <span className="font-semibold text-gray-700">Get Recommendation</span>.
                         </div>
                     )}
 
                     {hasResults && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 xl:grid-cols-3 sm:gap-4 lg:gap-6">
                             {topThree.map((item, idx) => (
-                                <motion.div key={item.cropName} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-xl font-black text-gray-900">#{idx + 1} {item.cropName}</h3>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.riskLevel === 'LOW' ? 'bg-emerald-100 text-emerald-700' : item.riskLevel === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
-                                            Risk {item.riskLevel}
+                                <motion.div
+                                    key={item.cropName}
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.08 }}
+                                    className="bg-white rounded-xl sm:rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm"
+                                >
+                                    <div className="flex items-center justify-between mb-2.5 sm:mb-3">
+                                        <h3 className="text-base sm:text-xl font-black text-gray-900">#{idx + 1} {item.cropName}</h3>
+                                        <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 sm:py-1 rounded-full shrink-0 ${item.riskLevel === 'LOW' ? 'bg-emerald-100 text-emerald-700' : item.riskLevel === 'MEDIUM' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'}`}>
+                                            {item.riskLevel} Risk
                                         </span>
                                     </div>
 
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between"><span className="text-gray-500">Cultivation Cost</span><span className="font-semibold">₹{item.estimatedCost.toLocaleString()}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Expected Revenue</span><span className="font-semibold">₹{item.expectedRevenue.toLocaleString()}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Estimated Profit</span><span className={`font-semibold ${item.estimatedProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>₹{item.estimatedProfit.toLocaleString()}</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Market Price</span><span className="font-semibold">₹{item.marketPrice}/Qt</span></div>
-                                        <div className="flex justify-between"><span className="text-gray-500">Final Score</span><span className="font-bold text-indigo-700">{item.finalScore}</span></div>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:text-sm">
+                                        <span className="text-gray-500">Cost</span><span className="font-semibold text-right">₹{item.estimatedCost.toLocaleString()}</span>
+                                        <span className="text-gray-500">Revenue</span><span className="font-semibold text-right">₹{item.expectedRevenue.toLocaleString()}</span>
+                                        <span className="text-gray-500">Profit</span><span className={`font-semibold text-right ${item.estimatedProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>₹{item.estimatedProfit.toLocaleString()}</span>
+                                        <span className="text-gray-500">Price</span><span className="font-semibold text-right">₹{item.marketPrice}/Qt</span>
+                                        <span className="text-gray-500">Score</span><span className="font-bold text-right text-indigo-700">{item.finalScore}</span>
                                     </div>
 
-                                    <p className="mt-4 text-xs text-gray-600 leading-relaxed">{item.reason}</p>
+                                    <p className="mt-3 text-[11px] sm:text-xs text-gray-500 leading-relaxed">{item.reason}</p>
                                 </motion.div>
                             ))}
                         </div>
                     )}
                 </section>
 
+                {/* Mandi Table — mobile card layout, desktop table */}
                 <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <IndianRupee className="w-5 h-5 text-gray-700" />
-                        <h2 className="text-lg font-bold text-gray-800">Real-time Mandi Market Feed</h2>
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                        <IndianRupee className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                        <h2 className="text-sm sm:text-lg font-bold text-gray-800">Mandi Market Feed</h2>
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    {/* Desktop table */}
+                    <div className="hidden sm:block bg-white rounded-2xl border border-gray-100 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 text-gray-600">
@@ -337,13 +359,30 @@ export const MarketPulse: React.FC = () => {
                             </table>
                         </div>
                     </div>
+
+                    {/* Mobile card layout */}
+                    <div className="sm:hidden space-y-2">
+                        {prices.slice(0, 8).map((item) => (
+                            <div key={item.id} className="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between">
+                                <div className="min-w-0">
+                                    <div className="font-semibold text-sm text-gray-800 truncate">{item.commodity}</div>
+                                    <div className="text-[11px] text-gray-500 truncate">{item.market}, {item.state}</div>
+                                </div>
+                                <div className="text-right shrink-0 ml-3">
+                                    <div className="font-bold text-sm text-emerald-700">₹{item.modal_price}</div>
+                                    <div className="text-[10px] text-gray-400">₹{item.min_price} – ₹{item.max_price}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </section>
 
-                <section className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-700 mt-0.5" />
+                {/* Notice */}
+                <section className="bg-amber-50 border border-amber-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-start gap-2.5 sm:gap-3">
+                    <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-700 mt-0.5 shrink-0" />
                     <div>
-                        <h4 className="font-semibold text-amber-900">Decision Support Notice</h4>
-                        <p className="text-sm text-amber-800 mt-1">
+                        <h4 className="font-semibold text-amber-900 text-xs sm:text-base">Decision Support Notice</h4>
+                        <p className="text-xs sm:text-sm text-amber-800 mt-0.5 sm:mt-1">
                             Recommendations are rule-based and market-linked. Please validate with local agronomy guidance before final sowing decisions.
                         </p>
                     </div>

@@ -2,13 +2,31 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMobile } from '../hooks/useMobile';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, Activity, ChevronRight, Layers } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RefreshCw, Droplets, Sprout, Wind, ThermometerSun, ChevronRight, Layers } from 'lucide-react';
 import { AgriTwinEngine } from '../features/agritwin/engine';
 import { SoilHealthCard, SimulationState, CROP_LIBRARY, CropType } from '../features/agritwin/types';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Sky, PointerLockControls, Stars, Cloud } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, Vignette, TiltShift2, Noise } from '@react-three/postprocessing';
+import { AgriTwinMark } from '../components/AgriTwinMark';
+
+const AGRITWIN_VISIBLE_CROPS: CropType[] = ['WHEAT', 'MAIZE', 'COTTON', 'CHILLI'];
+
+const createCurvedBladeGeometry = (width: number, height: number, bend: number, lift: number) => {
+    const geometry = new THREE.PlaneGeometry(width, height, 1, 7);
+    const positions = geometry.attributes.position;
+
+    for (let i = 0; i < positions.count; i++) {
+        const normalizedHeight = (positions.getY(i) + (height / 2)) / height;
+        positions.setX(i, positions.getX(i) + Math.sin(normalizedHeight * Math.PI) * bend);
+        positions.setZ(i, positions.getZ(i) + normalizedHeight * normalizedHeight * lift);
+    }
+
+    geometry.translate(width * 0.2, height * 0.5, 0);
+    geometry.computeVertexNormals();
+    return geometry;
+};
 
 const RainSystem: React.FC<{ count: number, active: boolean }> = ({ count, active }) => {
     const rainGeo = useMemo(() => {
@@ -39,171 +57,286 @@ const RainSystem: React.FC<{ count: number, active: boolean }> = ({ count, activ
 };
 
 const FieldInstanceRenderer: React.FC<{ state: SimulationState, isMobile: boolean }> = ({ state, isMobile }) => {
-    // Refs for 3 Layers
     const stemRef = useRef<THREE.InstancedMesh>(null);
     const foliageRef = useRef<THREE.InstancedMesh>(null);
     const fruitRef = useRef<THREE.InstancedMesh>(null);
-
     const dummy = useMemo(() => new THREE.Object3D(), []);
-
-    // Pre-compute random rotation offsets (avoids Math.random() in useFrame)
-    const randomOffsets = useMemo(() => {
-        const offsets = new Float32Array(4096); // max possible COUNT
-        for (let i = 0; i < offsets.length; i++) offsets[i] = (Math.random() - 0.5);
-        return offsets;
-    }, []);
-
-    // Cache reusable Color objects to avoid per-frame allocations
-    const baseColor = useMemo(() => new THREE.Color(), []);
+    const stemColor = useMemo(() => new THREE.Color(), []);
     const foliageColor = useMemo(() => new THREE.Color(), []);
     const fruitColor = useMemo(() => new THREE.Color(), []);
-    const stressColor = useMemo(() => new THREE.Color("#8d6e63"), []);
+    const stressColor = useMemo(() => new THREE.Color('#8d6e63'), []);
 
-    // Dynamic Density based on Crop Type
-    const { COUNT, GRID_SIZE } = useMemo(() => {
-        const type = state.crop.type;
-        // Rice/Wheat: Dense Field (4000 plants in 60m grid) -> Reduced on Mobile
-        if (type === 'RICE' || type === 'WHEAT') {
-            return { COUNT: isMobile ? 1000 : 4000, GRID_SIZE: 60 };
+    const { COUNT, GRID_SIZE, plantJitter, groundDry, groundWet, stemGeo, foliageGeo, fruitGeo } = useMemo(() => {
+        let count = isMobile ? 900 : 2500;
+        let gridSize = 58;
+        let jitter = 0.35;
+        let dry = '#4b2f1f';
+        let wet = '#2b241b';
+        let stemGeometry: THREE.BufferGeometry = new THREE.CylinderGeometry(0.012, 0.02, 1.1, 6);
+        let foliageGeometry: THREE.BufferGeometry = createCurvedBladeGeometry(0.11, 0.92, 0.14, 0.12);
+        let fruitGeometry: THREE.BufferGeometry = new THREE.CylinderGeometry(0.03, 0.055, 0.42, 6);
+
+        if (state.crop.type === 'MAIZE') {
+            count = isMobile ? 144 : 289;
+            gridSize = 88;
+            jitter = 1.15;
+            dry = '#66452b';
+            wet = '#3d3424';
+            stemGeometry = new THREE.CylinderGeometry(0.05, 0.085, 2.1, 8);
+            foliageGeometry = createCurvedBladeGeometry(0.24, 1.45, 0.36, 0.26);
+            fruitGeometry = new THREE.CylinderGeometry(0.09, 0.11, 0.52, 10);
+
+            stemGeometry.translate(0, 1.05, 0);
+            foliageGeometry.rotateY(Math.PI / 2);
+            foliageGeometry.translate(0.2, 0.28, 0);
+            fruitGeometry.rotateZ(-0.45);
+            fruitGeometry.translate(0.28, 1.0, 0);
+        } else if (state.crop.type === 'COTTON') {
+            count = isMobile ? 100 : 196;
+            gridSize = 92;
+            jitter = 1.55;
+            dry = '#5b3a26';
+            wet = '#3a2e24';
+            stemGeometry = new THREE.CylinderGeometry(0.03, 0.048, 0.95, 7);
+            foliageGeometry = new THREE.SphereGeometry(0.34, 8, 8);
+            fruitGeometry = new THREE.IcosahedronGeometry(0.14, 0);
+
+            stemGeometry.translate(0, 0.48, 0);
+            foliageGeometry.scale(1.12, 0.88, 1.12);
+            foliageGeometry.translate(0, 0.78, 0);
+            fruitGeometry.translate(0.18, 0.86, 0.08);
+        } else if (state.crop.type === 'CHILLI') {
+            count = isMobile ? 144 : 256;
+            gridSize = 80;
+            jitter = 0.95;
+            dry = '#603b28';
+            wet = '#423127';
+            stemGeometry = new THREE.CylinderGeometry(0.022, 0.036, 0.82, 7);
+            foliageGeometry = new THREE.SphereGeometry(0.28, 8, 8);
+            fruitGeometry = new THREE.CapsuleGeometry(0.028, 0.22, 5, 10);
+
+            stemGeometry.translate(0, 0.41, 0);
+            foliageGeometry.scale(1.0, 1.28, 0.9);
+            foliageGeometry.translate(0, 0.6, 0);
+            fruitGeometry.rotateZ(-0.65);
+            fruitGeometry.translate(0.18, 0.54, 0.04);
+        } else {
+            stemGeometry.translate(0, 0.55, 0);
+            foliageGeometry.rotateY(Math.PI / 4);
+            fruitGeometry.rotateZ(0.12);
+            fruitGeometry.translate(0.02, 1.02, 0);
         }
 
-        // Others: Maximum Spacing (400 plants in 120m grid = ~6m spacing) -> Reduced on Mobile
-        return { COUNT: isMobile ? 200 : 400, GRID_SIZE: 120 };
+        return {
+            COUNT: count,
+            GRID_SIZE: gridSize,
+            plantJitter: jitter,
+            groundDry: dry,
+            groundWet: wet,
+            stemGeo: stemGeometry,
+            foliageGeo: foliageGeometry,
+            fruitGeo: fruitGeometry
+        };
     }, [state.crop.type, isMobile]);
 
-    // --- Geometries for Layers ---
-    const { stemGeo, foliageGeo, fruitGeo } = useMemo(() => {
-        const type = state.crop.type;
-        let sGeo, fGeo, frGeo;
-
-        if (type === 'MAIZE') {
-            sGeo = new THREE.CylinderGeometry(0.04, 0.08, 1, 6); sGeo.translate(0, 0.5, 0);
-            fGeo = new THREE.PlaneGeometry(0.6, 0.15, 2, 2); fGeo.translate(0.3, 0.5, 0); // Leaf projecting out
-            frGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.3); frGeo.translate(0.1, 0.6, 0); // Corn cob
-        } else if (type === 'COTTON') {
-            sGeo = new THREE.CylinderGeometry(0.02, 0.03, 1, 5); sGeo.translate(0, 0.5, 0);
-            fGeo = new THREE.SphereGeometry(0.3, 4, 4); fGeo.translate(0, 0.5, 0); // Bush body
-            frGeo = new THREE.SphereGeometry(0.1, 4, 4); // Cotton boll
-        } else if (type === 'CHILLI') {
-            sGeo = new THREE.CylinderGeometry(0.02, 0.03, 0.6, 5); sGeo.translate(0, 0.3, 0);
-            fGeo = new THREE.SphereGeometry(0.3, 4, 4); fGeo.translate(0, 0.4, 0);
-            frGeo = new THREE.ConeGeometry(0.03, 0.1, 4); frGeo.rotateX(Math.PI / 2); // Pepper
-        } else { // Rice/Wheat
-            sGeo = new THREE.BoxGeometry(0.02, 1, 0.02); sGeo.translate(0, 0.5, 0);
-            fGeo = new THREE.BoxGeometry(0.02, 0.8, 0.02); fGeo.rotateZ(0.2); fGeo.translate(0.1, 0.4, 0); // Extra blade
-            frGeo = new THREE.BoxGeometry(0.04, 0.2, 0.04); frGeo.translate(0, 0.9, 0); // Head
+    const plantNoise = useMemo(() => {
+        const noise = new Float32Array(COUNT * 5);
+        for (let i = 0; i < COUNT; i++) {
+            const index = i * 5;
+            noise[index] = Math.random() - 0.5;
+            noise[index + 1] = Math.random() - 0.5;
+            noise[index + 2] = 0.82 + (Math.random() * 0.45);
+            noise[index + 3] = Math.random() * Math.PI * 2;
+            noise[index + 4] = 0.85 + (Math.random() * 0.3);
         }
-        return { stemGeo: sGeo, foliageGeo: fGeo, fruitGeo: frGeo };
-    }, [state.crop.type]);
+        return noise;
+    }, [COUNT]);
 
-    useFrame((state_gl) => {
-        const time = state_gl.clock.getElapsedTime();
+    useFrame((renderState) => {
+        const time = renderState.clock.getElapsedTime();
         const crop = state.crop;
         const sqrtCount = Math.sqrt(COUNT);
+        const stageFactor = THREE.MathUtils.clamp(0.28 + (crop.dvs * 0.58), 0.25, 1.45);
+        const heightFactor = THREE.MathUtils.clamp((crop.height / 90) + stageFactor, 0.25, 2.2);
+        const stressDrop = THREE.MathUtils.clamp(state.stress.water * 0.18, 0, 0.16);
 
         let idx = 0;
         for (let x = 0; x < sqrtCount; x++) {
             for (let z = 0; z < sqrtCount; z++) {
-                const xPos = (x / sqrtCount) * GRID_SIZE - GRID_SIZE / 2;
-                const zPos = (z / sqrtCount) * GRID_SIZE - GRID_SIZE / 2;
+                const noiseIndex = idx * 5;
+                const offsetX = plantNoise[noiseIndex] * plantJitter;
+                const offsetZ = plantNoise[noiseIndex + 1] * plantJitter;
+                const vigor = plantNoise[noiseIndex + 2];
+                const phase = plantNoise[noiseIndex + 3];
+                const leanBias = plantNoise[noiseIndex + 4];
+                const xPos = ((x / sqrtCount) * GRID_SIZE) - (GRID_SIZE / 2) + offsetX;
+                const zPos = ((z / sqrtCount) * GRID_SIZE) - (GRID_SIZE / 2) + offsetZ;
+                const wave = Math.sin((time * 1.2) + phase + (xPos * 0.08) + (zPos * 0.11));
+                const windLean = wave * 0.08 * leanBias;
+                const yaw = phase * 0.3;
 
-                // Wind
-                const wave = Math.sin(time * 1.5 + xPos * 0.3 + zPos * 0.3);
-                const windForce = wave * 0.1 * (crop.height / 100);
-                const rndOffset = randomOffsets[idx % randomOffsets.length];
+                let stemScaleX = 1;
+                let stemScaleY = 0.9;
+                let stemScaleZ = 1;
+                let foliageScaleX = 1;
+                let foliageScaleY = 1;
+                let foliageScaleZ = 1;
+                let fruitScaleX = 0;
+                let fruitScaleY = 0;
+                let fruitScaleZ = 0;
+                let foliagePitch = windLean * 1.4;
+                let fruitPitch = windLean * 0.8;
 
-                // --- STEM ---
+                if (crop.type === 'WHEAT') {
+                    stemScaleX = 0.92;
+                    stemScaleY = heightFactor * (0.78 + (vigor * 0.28));
+                    stemScaleZ = 0.92;
+                    foliageScaleX = 0.95 + (vigor * 0.08);
+                    foliageScaleY = heightFactor * (0.84 + (vigor * 0.18));
+                    foliageScaleZ = 0.95;
+                    fruitScaleX = crop.dvs > 0.95 ? 0.88 : 0;
+                    fruitScaleY = crop.dvs > 0.95 ? 0.65 + (crop.dvs * 0.35) : 0;
+                    fruitScaleZ = crop.dvs > 0.95 ? 0.88 : 0;
+                    foliagePitch += 0.12;
+                } else if (crop.type === 'MAIZE') {
+                    stemScaleY = (0.72 + (heightFactor * 0.8)) * vigor;
+                    foliageScaleX = 1.08 + (vigor * 0.22);
+                    foliageScaleY = 0.74 + (heightFactor * 0.72);
+                    foliageScaleZ = 1.08;
+                    fruitScaleX = crop.dvs > 0.98 ? 0.95 : 0;
+                    fruitScaleY = crop.dvs > 0.98 ? 0.95 : 0;
+                    fruitScaleZ = crop.dvs > 0.98 ? 0.95 : 0;
+                    foliagePitch += 0.35;
+                    fruitPitch -= 0.12;
+                } else if (crop.type === 'COTTON') {
+                    stemScaleX = 1.1;
+                    stemScaleY = (0.52 + (stageFactor * 0.35)) * vigor;
+                    stemScaleZ = 1.1;
+                    foliageScaleX = 0.9 + (crop.lai * 0.08);
+                    foliageScaleY = 0.82 + (crop.lai * 0.05);
+                    foliageScaleZ = 0.9 + (crop.lai * 0.08);
+                    fruitScaleX = crop.dvs > 1.0 ? 0.92 : 0;
+                    fruitScaleY = crop.dvs > 1.0 ? 0.92 : 0;
+                    fruitScaleZ = crop.dvs > 1.0 ? 0.92 : 0;
+                    foliagePitch = windLean * 0.7;
+                } else {
+                    stemScaleX = 1.05;
+                    stemScaleY = (0.58 + (stageFactor * 0.28)) * vigor;
+                    stemScaleZ = 1.05;
+                    foliageScaleX = 0.88 + (crop.lai * 0.06);
+                    foliageScaleY = 0.96 + (crop.lai * 0.05);
+                    foliageScaleZ = 0.82 + (crop.lai * 0.05);
+                    fruitScaleX = crop.dvs > 1.0 ? 0.92 : 0;
+                    fruitScaleY = crop.dvs > 1.0 ? 0.92 : 0;
+                    fruitScaleZ = crop.dvs > 1.0 ? 0.92 : 0;
+                    foliagePitch = windLean * 0.65;
+                    fruitPitch -= 0.22;
+                }
+
                 dummy.position.set(xPos, 0, zPos);
-                dummy.rotation.set(windForce, rndOffset, windForce);
-                const h = Math.max(0.1, crop.height / 20);
-                dummy.scale.set(1, h, 1);
+                dummy.rotation.set(windLean - stressDrop, yaw, windLean * 0.75);
+                dummy.scale.set(stemScaleX, stemScaleY, stemScaleZ);
                 dummy.updateMatrix();
                 if (stemRef.current) stemRef.current.setMatrixAt(idx, dummy.matrix);
 
-                // --- FOLIAGE (Leaves flutter more) ---
-                dummy.rotation.set(windForce * 1.5, rndOffset, windForce * 1.5);
-                // Foliage grows wider
-                if (crop.type === 'COTTON' || crop.type === 'CHILLI') dummy.scale.set(h, h, h);
-                else dummy.scale.set(1, h, 1);
+                dummy.position.set(xPos, 0, zPos);
+                dummy.rotation.set(foliagePitch - stressDrop, yaw + (phase * 0.1), windLean * 1.1);
+                dummy.scale.set(foliageScaleX, foliageScaleY, foliageScaleZ);
                 dummy.updateMatrix();
                 if (foliageRef.current) foliageRef.current.setMatrixAt(idx, dummy.matrix);
 
-                // --- FRUIT (Only if reproductive) ---
-                if (crop.dvs > 1.0) {
-                    dummy.rotation.set(windForce, rndOffset, windForce);
-                    dummy.scale.set(1, 1, 1); // Fruits don't stretch like stems
-                    dummy.updateMatrix();
-                    if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
-                } else {
-                    // Hide fruit if not ready
-                    dummy.scale.set(0, 0, 0);
-                    dummy.updateMatrix();
-                    if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
-                }
+                dummy.position.set(xPos, 0, zPos);
+                dummy.rotation.set(fruitPitch - stressDrop, yaw, windLean * 0.85);
+                dummy.scale.set(fruitScaleX, fruitScaleY, fruitScaleZ);
+                dummy.updateMatrix();
+                if (fruitRef.current) fruitRef.current.setMatrixAt(idx, dummy.matrix);
+
                 idx++;
             }
         }
+
         if (stemRef.current) stemRef.current.instanceMatrix.needsUpdate = true;
         if (foliageRef.current) foliageRef.current.instanceMatrix.needsUpdate = true;
         if (fruitRef.current) fruitRef.current.instanceMatrix.needsUpdate = true;
 
-        // Color Updates (reuse cached Color objects)
-        baseColor.set("#4caf50");
-        foliageColor.set("#66bb6a");
-        fruitColor.set("#ffffff");
-
-        if (crop.type === 'COTTON' && crop.dvs > 1.2) fruitColor.set("#ffffff");
-        if (crop.type === 'CHILLI' && crop.dvs > 1.2) fruitColor.set("#d32f2f");
-        if (crop.type === 'WHEAT' && crop.dvs > 1.2) { baseColor.set("#eecfa1"); foliageColor.set("#dce775"); fruitColor.set("#ffecb3"); }
-
-        if (state.stress.water > 0.4) {
-            baseColor.lerp(stressColor, 0.6);
-            foliageColor.lerp(stressColor, 0.8); // Leaves die first
+        if (crop.type === 'WHEAT') {
+            stemColor.set(crop.dvs > 1.08 ? '#9c7a43' : '#6d8b34');
+            foliageColor.set(crop.dvs > 1.08 ? '#d1b85a' : '#8ccf57');
+            fruitColor.set(crop.dvs > 1.08 ? '#f2dc8a' : '#c0df70');
+        } else if (crop.type === 'MAIZE') {
+            stemColor.set('#5f7f2b');
+            foliageColor.set('#58a33f');
+            fruitColor.set(crop.dvs > 1.0 ? '#f3cc59' : '#b4d86a');
+        } else if (crop.type === 'COTTON') {
+            stemColor.set('#64753c');
+            foliageColor.set('#3f914a');
+            fruitColor.set(crop.dvs > 1.0 ? '#f5f5f4' : '#f3c7dc');
+        } else {
+            stemColor.set('#64753c');
+            foliageColor.set('#32964b');
+            fruitColor.set(crop.dvs > 1.0 ? '#e03131' : '#9bd04c');
         }
 
-        if (stemRef.current && stemRef.current.material instanceof THREE.MeshStandardMaterial) stemRef.current.material.color.copy(baseColor);
-        if (foliageRef.current && foliageRef.current.material instanceof THREE.MeshStandardMaterial) foliageRef.current.material.color.copy(foliageColor);
-        if (fruitRef.current && fruitRef.current.material instanceof THREE.MeshStandardMaterial) fruitRef.current.material.color.copy(fruitColor);
+        if (state.stress.water > 0.35) {
+            stemColor.lerp(stressColor, 0.45);
+            foliageColor.lerp(stressColor, 0.68);
+            fruitColor.lerp(stressColor, 0.2);
+        }
+
+        if (stemRef.current && stemRef.current.material instanceof THREE.MeshStandardMaterial) {
+            stemRef.current.material.color.copy(stemColor);
+        }
+        if (foliageRef.current && foliageRef.current.material instanceof THREE.MeshStandardMaterial) {
+            foliageRef.current.material.color.copy(foliageColor);
+        }
+        if (fruitRef.current && fruitRef.current.material instanceof THREE.MeshStandardMaterial) {
+            fruitRef.current.material.color.copy(fruitColor);
+        }
     });
 
     const isRaining = state.weather.rain > 5;
 
     return (
         <group>
-            {/* Dynamic Environment */}
             <Sky
-                sunPosition={[100, 20 + Math.sin(state.day * 0.1) * 20, 100]} // Sun moves nicely
-                turbidity={isRaining ? 20 : 10}
-                rayleigh={isRaining ? 0.5 : 2}
+                sunPosition={[90, 25 + (Math.sin(state.day * 0.1) * 18), 70]}
+                turbidity={isRaining ? 17 : 8}
+                rayleigh={isRaining ? 0.7 : 2.2}
+                mieCoefficient={0.02}
             />
-            <Stars fade />
-            <Cloud position={[0, 20, 0]} opacity={isRaining ? 0.9 : 0.3} speed={0.2} color={isRaining ? "#444" : "#fff"} />
-            <fogExp2 attach="fog" args={[isRaining ? '#111' : '#1a1a1a', isRaining ? 0.05 : 0.02]} />
+            <Stars fade count={isMobile ? 1800 : 3200} saturation={0} factor={2} />
+            <Cloud position={[0, 20, 0]} opacity={isRaining ? 0.88 : 0.22} speed={0.15} color={isRaining ? '#5a5a5a' : '#ffffff'} />
+            <Cloud position={[-18, 26, -12]} opacity={isRaining ? 0.72 : 0.12} speed={0.09} color={isRaining ? '#4b5563' : '#f8fafc'} />
+            <fogExp2 attach="fog" args={[isRaining ? '#151515' : '#213018', isRaining ? 0.038 : 0.016]} />
 
-            <RainSystem count={isMobile ? 500 : 2000} active={isRaining} />
+            <RainSystem count={isMobile ? 500 : 2200} active={isRaining} />
 
-            <ambientLight intensity={isRaining ? 0.1 : 0.3} />
+            <hemisphereLight args={['#dbeafe', '#2f241d', isRaining ? 0.35 : 0.9]} />
+            <ambientLight intensity={isRaining ? 0.18 : 0.28} />
             <directionalLight
-                position={[50, 50, 25]}
-                intensity={isRaining ? 0.5 : 2}
+                position={[45, 50, 18]}
+                intensity={isRaining ? 0.75 : 1.8}
                 castShadow
                 shadow-mapSize={[2048, 2048]}
             />
 
-            {/* Texture Ground - Infinite Look */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[1000, 1000, 32, 32]} />
-                <meshStandardMaterial color={isRaining ? "#281912" : "#3e2723"} roughness={0.9} />
+                <meshStandardMaterial color={isRaining ? groundWet : groundDry} roughness={0.95} />
+            </mesh>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} receiveShadow>
+                <planeGeometry args={[GRID_SIZE * 1.25, GRID_SIZE * 1.25, 1, 1]} />
+                <meshStandardMaterial color={isRaining ? '#3c5f2a' : '#6f5c2d'} roughness={1} opacity={0.15} transparent />
             </mesh>
 
             <instancedMesh ref={stemRef} args={[stemGeo, undefined, COUNT]} castShadow receiveShadow>
-                <meshStandardMaterial />
+                <meshStandardMaterial roughness={0.72} />
             </instancedMesh>
             <instancedMesh ref={foliageRef} args={[foliageGeo, undefined, COUNT]} castShadow receiveShadow>
-                <meshStandardMaterial side={THREE.DoubleSide} />
+                <meshStandardMaterial side={THREE.DoubleSide} roughness={0.6} />
             </instancedMesh>
             <instancedMesh ref={fruitRef} args={[fruitGeo, undefined, COUNT]} castShadow receiveShadow>
-                <meshStandardMaterial />
+                <meshStandardMaterial roughness={0.48} />
             </instancedMesh>
         </group>
     );
@@ -320,7 +453,7 @@ const CameraController: React.FC<{ mode: 'ORBIT' | 'SCOUT' }> = ({ mode }) => {
     }, [mode, camera]);
 
     return mode === 'ORBIT' ?
-        <OrbitControls enableDamping dampingFactor={0.05} /> :
+        <OrbitControls enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2 - 0.05} /> :
         <ScoutCamera />;
 };
 
@@ -332,10 +465,10 @@ export const Simulator: React.FC = () => {
         id: "demo-1", N: 280, P: 22, K: 150, pH: 7.2, EC: 0.5, OC: 0.6
     });
 
-    const [engine, setEngine] = useState<AgriTwinEngine>(new AgriTwinEngine(shc, 'RICE'));
+    const [engine, setEngine] = useState<AgriTwinEngine>(new AgriTwinEngine(shc, 'WHEAT'));
     const [simState, setSimState] = useState<SimulationState>(engine.state);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [selectedCrop, setSelectedCrop] = useState<CropType>('RICE');
+    const [selectedCrop, setSelectedCrop] = useState<CropType>('WHEAT');
     const [cameraMode, setCameraMode] = useState<'ORBIT' | 'SCOUT'>('ORBIT');
     // Mobile Sidebar State
     const isMobile = useMobile();
@@ -363,13 +496,11 @@ export const Simulator: React.FC = () => {
             type === 'IRRIGATE' ? { irrigate: 20 } :
                 type === 'FERTILIZE' ? { fertilize_n: 15 } :
                     type === 'WEED' ? { weed: true } :
-                        { harvest: true, newCrop: selectedCrop === 'RICE' ? 'WHEAT' : 'RICE' } // Toggles for demo
+                        { harvest: true, newCrop: selectedCrop }
         );
 
-        // Auto switch selected crop if harvested
         if (type === 'HARVEST') {
-            setSelectedCrop(selectedCrop === 'RICE' ? 'WHEAT' : 'RICE');
-            setIsPlaying(false); // Pause after harvest
+            setIsPlaying(false);
         }
 
         setSimState(newState);
@@ -387,7 +518,10 @@ export const Simulator: React.FC = () => {
             {/* Mobile Header / Toggle */}
             <div className="md:hidden bg-neutral-800 border-b border-white/10 p-4 flex justify-between items-center z-20 shrink-0">
                 <div className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-emerald-400" />
+                    <button onClick={() => navigate('/')} className="text-neutral-400 p-1 mr-1">
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <AgriTwinMark className="w-6 h-6" aria-label="Agri-Twin" />
                     <span className="font-bold text-lg tracking-tight">Agri-Twin</span>
                 </div>
                 <button
@@ -414,7 +548,7 @@ export const Simulator: React.FC = () => {
                         <span>{t('back_to_hub', 'Back to Hub')}</span>
                     </button>
                     <h1 className="text-2xl font-black bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent flex items-center gap-2">
-                        <Activity className="w-6 h-6 text-emerald-400" /> {t('sim_title', 'Agri-Twin')}
+                        <AgriTwinMark className="w-7 h-7 shrink-0" aria-label="Agri-Twin" /> {t('sim_title', 'Agri-Twin')}
                     </h1>
                     <p className="text-xs text-neutral-400 mt-1 uppercase tracking-widest">Cyber-Physical Simulator</p>
                 </div>
@@ -431,7 +565,7 @@ export const Simulator: React.FC = () => {
                 <div className="space-y-2 mt-8 md:mt-0">
                     <label className="text-xs font-bold text-neutral-500 uppercase">Crop Model</label>
                     <div className="grid grid-cols-2 gap-2">
-                        {(Object.keys(CROP_LIBRARY) as CropType[]).map(c => (
+                        {AGRITWIN_VISIBLE_CROPS.map(c => (
                             <button
                                 key={c}
                                 onClick={() => { setSelectedCrop(c); const e = new AgriTwinEngine(shc, c); setEngine(e); setSimState(e.state); if (isMobile) setIsSidebarOpen(false); }}
@@ -484,7 +618,7 @@ export const Simulator: React.FC = () => {
                         </button>
                         <button onClick={() => handleAction('HARVEST')} className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 p-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95">
                             <ChevronRight className="w-5 h-5" />
-                            <span className="font-bold text-sm">Harvest (Rotate)</span>
+                            <span className="font-bold text-sm">Harvest &amp; Replant</span>
                         </button>
                     </div>
 

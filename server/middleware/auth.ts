@@ -24,7 +24,8 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
   // Requirement 2.3: Allow public access to analysis for demo/unauthenticated users
   if (req.path === '/health' ||
     req.path.startsWith('/public') ||
-    req.path.startsWith('/analysis')) {
+    req.path.startsWith('/analysis') ||
+    req.path.startsWith('/market')) {
     return next();
   }
 

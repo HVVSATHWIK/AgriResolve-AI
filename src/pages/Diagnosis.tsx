@@ -422,7 +422,7 @@ export const Diagnosis: React.FC = () => {
                         <motion.div
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-center space-y-2 mb-12"
+                            className="hidden md:block text-center space-y-2 mb-12"
                         >
                             <h1 className="text-4xl font-black text-gray-900 tracking-tight drop-shadow-sm">
                                 {isBioProspector ? t('bio_welcome_title', 'Hidden Treasure Detector') : t('app_title')}
