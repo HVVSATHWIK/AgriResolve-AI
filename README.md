@@ -157,6 +157,28 @@ Architecture note: the frontend never talks to Gemini directly. All AI calls go 
   - `SESSION_SECRET`
   - `CLIENT_URL` (your Vercel URL, e.g. `https://agri-resolve-ai.vercel.app`)
 
+## ✅ Release Workflow (Professional)
+
+Use this sequence for clean production updates:
+
+1. Remove generated artifacts before commit (logs, temp outputs, local debug reports).
+2. Run quality checks and build:
+  ```bash
+  npm run build
+  ```
+3. Deploy frontend hosting:
+  ```bash
+  firebase deploy
+  ```
+4. Commit with a clear, scoped message:
+  ```bash
+  git add .
+  git commit -m "chore: clean generated artifacts and update release documentation"
+  git push origin main
+  ```
+
+Tip: keep machine-specific files (for example editor caches and generated logs) out of commits unless they are intentionally versioned.
+
 ## ⚠️ Quota & Billing
 This app uses **Gemini 2.5**, which has a strict free tier (~20 requests/day).
 -   If you see **"Quota Exceeded"**, please link a billing account to your Google Cloud Project.

@@ -7,9 +7,12 @@ android {
   }
 }
 
-apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
+def cordovaVariablesGradle = file("../capacitor-cordova-android-plugins/cordova.variables.gradle")
+if (cordovaVariablesGradle.exists()) {
+  apply from: cordovaVariablesGradle
+}
 dependencies {
-
+    implementation project(':capacitor-camera')
 
 }
 

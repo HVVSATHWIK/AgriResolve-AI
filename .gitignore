@@ -120,3 +120,13 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Local analysis/build artifacts
+build_log.txt
+build_result.txt
+eslint_compact.txt
+eslint_final.txt
+lint_output.txt
+temp_req.json
+ts_errors.txt
+typecheck_latest.txt
