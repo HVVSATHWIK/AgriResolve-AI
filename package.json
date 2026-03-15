@@ -10,6 +10,7 @@
     "dev": "vite",
     "prebuild": "node scripts/generate-og-preview.mjs",
     "build": "vite build",
+    "start": "node dist/server/index.js",
     "preview": "vite preview",
     "typescript": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
