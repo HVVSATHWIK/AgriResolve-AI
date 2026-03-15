@@ -130,3 +130,6 @@ lint_output.txt
 temp_req.json
 ts_errors.txt
 typecheck_latest.txt
+
+# Local archive artifact
+Agri.zip
