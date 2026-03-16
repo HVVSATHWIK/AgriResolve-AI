@@ -34,7 +34,26 @@ export interface AnalysisRequest {
  * In production → VITE_API_URL (e.g. https://agriresolve-backend.onrender.com)
  * In development → empty string (Vite proxy or same-origin)
  */
-const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim();
+const AZURE_API_BASE = 'https://agriresolve-ai-azfferc6bff2g6gt.germanywestcentral-01.azurewebsites.net';
+
+const resolveApiBase = (): string => {
+  const raw = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
+  const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw);
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isHostedApp = host !== 'localhost' && host !== '127.0.0.1';
+
+    if (isHostedApp && isLocalTarget) {
+      console.warn('[API Client] Hosted app detected with localhost API URL. Falling back to Azure backend.');
+      return AZURE_API_BASE;
+    }
+  }
+
+  return raw;
+};
+
+const API_BASE = resolveApiBase();
 
 async function postAnalysis(baseUrl: string, request: AnalysisRequest) {
   return fetch(`${baseUrl}/api/analysis`, {
