@@ -1,0 +1,11 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build and Deploy Firebase",
+			"type": "shell",
+			"command": "npm run build && firebase deploy --only hosting",
+			"isBackground": false
+		}
+	]
+}

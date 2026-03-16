@@ -89,12 +89,56 @@ export const AgentVisualizer: React.FC<AgentVisualizerProps> = ({ status }) => {
         { ...AGENTS[4], label: t('agent_explanation') },
     ];
 
+    const activeAgent = activeIndex >= 0 && activeIndex < translatedAgents.length
+        ? translatedAgents[activeIndex]
+        : null;
+
     if (status === AssessmentStatus.IDLE || status === AssessmentStatus.ERROR) return null;
 
     return (
         <div className="w-full py-4 relative pb-12">
 
-            <div className="flex items-start justify-between w-full relative z-10 px-2 lg:px-8">
+            <div className="md:hidden mb-3 px-2">
+                <div className="text-[11px] font-semibold text-gray-600">
+                    {activeAgent ? `Current: ${activeAgent.label}` : 'Current: Preparing analysis'}
+                </div>
+            </div>
+
+            <div className="md:hidden flex gap-3 overflow-x-auto px-2 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {translatedAgents.map((agent, index) => {
+                    const isActive = index === activeIndex;
+                    const isCompleted = index < activeIndex;
+
+                    return (
+                        <div key={agent.id} className="snap-start min-w-[96px] max-w-[96px] flex-shrink-0 flex flex-col items-center text-center">
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0.6 }}
+                                animate={{
+                                    scale: isActive ? 1.06 : 1,
+                                    opacity: isActive || isCompleted ? 1 : 0.45,
+                                }}
+                                className={cn(
+                                    "w-12 h-12 rounded-2xl flex items-center justify-center border-[1.5px] transition-colors duration-500",
+                                    isActive ? "border-green-500 bg-green-50 text-green-600" :
+                                        isCompleted ? "border-green-500 bg-green-500 text-white" :
+                                            "border-gray-200 bg-gray-50 text-gray-300"
+                                )}
+                            >
+                                <agent.icon className="w-5 h-5" strokeWidth={1.75} />
+                            </motion.div>
+
+                            <span className={cn(
+                                "mt-2 text-[10px] leading-tight font-bold tracking-wide break-words",
+                                isActive ? "text-green-700" : isCompleted ? "text-green-600" : "text-gray-500"
+                            )}>
+                                {agent.label}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="hidden md:flex items-start justify-between w-full relative z-10 px-2 lg:px-8">
                 {translatedAgents.map((agent, index) => {
                     // Current step is active if index matches activeIndex
                     const isActive = index === activeIndex;
@@ -137,7 +181,7 @@ export const AgentVisualizer: React.FC<AgentVisualizerProps> = ({ status }) => {
                                 {/* Text Label - Absolute Positioned & Constrained Width */}
                                 <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-[120px] text-center pointer-events-none z-40">
                                     <span className={cn(
-                                        "block text-[8px] md:text-[9px] font-bold uppercase tracking-wide leading-tight transition-colors duration-300 break-words",
+                                        "block text-[9px] font-bold uppercase tracking-wide leading-tight transition-colors duration-300 break-words",
                                         isActive ? "text-green-600" : isCompleted ? "text-green-700" : "text-gray-300"
                                     )}>
                                         {agent.label}
