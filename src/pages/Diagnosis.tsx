@@ -221,11 +221,102 @@ export const Diagnosis: React.FC = () => {
         handleTranslation();
     }, [i18n.language, baseData, status]); // Dependencies: run when language changes
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const readFileAsDataUrl = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error('Failed to read file'));
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const loadImageElement = (dataUrl: string): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Failed to decode image'));
+            img.src = dataUrl;
+        });
+    };
+
+    const canvasToBlob = (canvas: HTMLCanvasElement, quality: number): Promise<Blob> => {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    reject(new Error('Failed to compress image'));
+                    return;
+                }
+                resolve(blob);
+            }, 'image/jpeg', quality);
+        });
+    };
+
+    const optimizeImageForUpload = async (file: File, maxBytes: number): Promise<File> => {
+        const dataUrl = await readFileAsDataUrl(file);
+        const image = await loadImageElement(dataUrl);
+
+        const MAX_DIMENSION = 1600;
+        const scale = Math.min(1, MAX_DIMENSION / Math.max(image.width, image.height));
+
+        let targetWidth = Math.max(1, Math.round(image.width * scale));
+        let targetHeight = Math.max(1, Math.round(image.height * scale));
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+            throw new Error('Canvas is not supported on this device');
+        }
+
+        let quality = 0.9;
+        let compressedBlob: Blob | null = null;
+
+        // First pass: reduce quality.
+        for (let i = 0; i < 6; i++) {
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.clearRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            const blob = await canvasToBlob(canvas, quality);
+            compressedBlob = blob;
+            if (blob.size <= maxBytes) {
+                break;
+            }
+
+            quality = Math.max(0.45, quality - 0.1);
+        }
+
+        // Second pass: reduce dimensions if still too large.
+        while (compressedBlob && compressedBlob.size > maxBytes && targetWidth > 640 && targetHeight > 640) {
+            targetWidth = Math.max(640, Math.round(targetWidth * 0.85));
+            targetHeight = Math.max(640, Math.round(targetHeight * 0.85));
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            context.clearRect(0, 0, targetWidth, targetHeight);
+            context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+            compressedBlob = await canvasToBlob(canvas, quality);
+        }
+
+        if (!compressedBlob || compressedBlob.size > maxBytes) {
+            throw new Error('Image compression could not reach upload size limit');
+        }
+
+        return new File(
+            [compressedBlob],
+            `${file.name.replace(/\.[^.]+$/, '') || 'upload'}-optimized.jpg`,
+            { type: 'image/jpeg', lastModified: Date.now() }
+        );
+    };
+
+    const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
             // DIA-001: Strict File Validation
             const MAX_IMAGE_BYTES = 6 * 1024 * 1024; // 6MB
+            const MAX_ACCEPTED_INPUT_BYTES = 25 * 1024 * 1024; // 25MB before client optimization
             const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
 
             if (!ALLOWED_MIME_TYPES.includes(file.type)) {
@@ -239,35 +330,43 @@ export const Diagnosis: React.FC = () => {
                 return;
             }
 
-            if (file.size > MAX_IMAGE_BYTES) {
+            if (file.size > MAX_ACCEPTED_INPUT_BYTES) {
                 setError(
                     t('file_too_large', {
-                        defaultValue: 'Image file is too large. Please upload a smaller, clearer photo (max ~6MB).',
+                        defaultValue: 'Image is too large. Please choose a file under ~25MB.',
                     })
                 );
                 setStatus(AssessmentStatus.ERROR);
-                // Clear the input so selecting the same file again triggers onChange
                 event.target.value = '';
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const result = e.target?.result as string;
-                // Double check data header
+            try {
+                const uploadFile = file.size > MAX_IMAGE_BYTES
+                    ? await optimizeImageForUpload(file, MAX_IMAGE_BYTES)
+                    : file;
+
+                const result = await readFileAsDataUrl(uploadFile);
+
                 if (!result.startsWith('data:image/')) {
                     setError(t('file_corrupt', { defaultValue: 'File appears corrupted. Please try another image.' }));
                     setStatus(AssessmentStatus.ERROR);
+                    event.target.value = '';
                     return;
                 }
+
                 setImage(result);
-                startAssessment(result, file);
-            };
-            reader.onerror = () => {
-                setError(t('file_read_error', { defaultValue: 'Failed to read file. Please try again.' }));
+                startAssessment(result, uploadFile);
+            } catch {
+                setError(
+                    t('file_too_large', {
+                        defaultValue: 'Image is too large to process on this device. Try a closer crop or lower-resolution photo.',
+                    })
+                );
                 setStatus(AssessmentStatus.ERROR);
-            };
-            reader.readAsDataURL(file);
+            }
+
+            event.target.value = '';
         }
     };
 
