@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Sprout, TrendingUp, Scan } from 'lucide-react';
 import { HistoryService } from '../features/history/services/HistoryService';
@@ -7,8 +7,27 @@ import { AgriTwinMark } from '../components/AgriTwinMark';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { t } = useTranslation();
     const [lastScanDate, setLastScanDate] = useState<string | null>(null);
+
+    const demoQuerySuffix = React.useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        const next = new URLSearchParams();
+
+        if (params.has('demo')) next.set('demo', params.get('demo') || '1');
+        if (params.has('judge')) next.set('judge', params.get('judge') || '1');
+
+        const serialized = next.toString();
+        return serialized ? `?${serialized}` : '';
+    }, [location.search]);
+
+    const buildDiagnosisRoute = (mode?: 'bioprospector') => {
+        const params = new URLSearchParams(demoQuerySuffix.replace(/^\?/, ''));
+        if (mode) params.set('mode', mode);
+        const query = params.toString();
+        return query ? `/diagnosis?${query}` : '/diagnosis';
+    };
 
     useEffect(() => {
         const fetchLastScan = async () => {
@@ -37,7 +56,7 @@ export const Dashboard: React.FC = () => {
             data: lastScanDate ? { label: 'Last Scan', value: lastScanDate } : undefined,
             actionLabel: t('action_scan', 'Start Diagnosis'),
             icon: Scan,
-            action: () => navigate('/diagnosis'),
+            action: () => navigate(buildDiagnosisRoute()),
             status: 'Active',
             isFlagship: true
         },
@@ -57,7 +76,7 @@ export const Dashboard: React.FC = () => {
             desc: t('app_bio_desc', 'Identify medicinal value in weeds'),
             actionLabel: t('action_discover', 'Analyze Weeds'),
             icon: Sprout,
-            action: () => navigate('/diagnosis?mode=bioprospector'),
+            action: () => navigate(buildDiagnosisRoute('bioprospector')),
             status: 'Active',
             isFlagship: false
         },

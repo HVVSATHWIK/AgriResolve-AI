@@ -26,6 +26,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
   const { currentUser, signOut } = useAuth();
   const mainRef = useRef<HTMLElement>(null);
 
+  const diagnosisRoute = React.useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const next = new URLSearchParams();
+
+    if (params.has('demo')) next.set('demo', params.get('demo') || '1');
+    if (params.has('judge')) next.set('judge', params.get('judge') || '1');
+
+    const query = next.toString();
+    return query ? `/diagnosis?${query}` : '/diagnosis';
+  }, [location.search]);
+
   // Scroll main content to top on route change
   useEffect(() => {
     if (mainRef.current) {
@@ -154,7 +165,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
               <button
                 onClick={() => {
                   if (onNewAnalysis) onNewAnalysis();
-                  navigate('/diagnosis');
+                  navigate(diagnosisRoute);
                   setIsMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/diagnosis' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -168,7 +179,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
             <button
               onClick={() => {
                 if (onNewAnalysis) onNewAnalysis();
-                navigate('/diagnosis');
+                navigate(diagnosisRoute);
                 setIsMobileMenuOpen(false);
               }}
               className="w-full flex items-center justify-center gap-2 bg-emerald-950 hover:bg-emerald-900 text-white p-3 rounded-xl shadow-lg shadow-emerald-900/10 transition-all active:scale-95 group"

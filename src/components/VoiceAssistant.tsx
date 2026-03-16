@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const VoiceAssistant: React.FC = () => {
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const diagnosisRoute = React.useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        const next = new URLSearchParams();
+
+        if (params.has('demo')) next.set('demo', params.get('demo') || '1');
+        if (params.has('judge')) next.set('judge', params.get('judge') || '1');
+
+        const query = next.toString();
+        return query ? `/diagnosis?${query}` : '/diagnosis';
+    }, [location.search]);
 
     // Browser Speech Recognition Support
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,7 +103,7 @@ export const VoiceAssistant: React.FC = () => {
             navigate('/market');
         } else if (cmd.includes('doctor') || cmd.includes('diagnos') || cmd.includes('plant')) {
             speak("Opening Crop Doctor.");
-            navigate('/diagnosis');
+            navigate(diagnosisRoute);
         } else if (cmd.includes('weather')) {
             speak("Reading weather report...");
             // (Mock) In a real app, this would read current weather state
