@@ -59,6 +59,22 @@ openssl rand -hex 32
 
 ## Optional Variables
 
+### GEMINI_PRIMARY_MODEL
+
+**Description**: Primary Gemini model name used first for analysis requests
+
+**Required**: No
+
+**Default**: `gemini-2.5-flash-lite`
+
+**Format**: Valid Gemini model ID string
+
+**Example**: `GEMINI_PRIMARY_MODEL=gemini-2.5-flash-lite`
+
+**Usage**: The backend tries this model first, then falls back to compatible models on quota/model errors.
+
+---
+
 ### HOST
 
 **Description**: Host address to bind the server to

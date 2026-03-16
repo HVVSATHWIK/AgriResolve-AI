@@ -80,6 +80,9 @@ const DEFAULT_CONFIG = {
   ],
 };
 
+const PRIMARY_GEMINI_MODEL =
+  (process.env.GEMINI_PRIMARY_MODEL || 'gemini-2.5-flash-lite').trim();
+
 /**
  * Model fallback configuration
  */
@@ -108,6 +111,19 @@ const MODEL_FALLBACKS: Record<string, string[]> = {
     'gemini-2.0-flash',
     'gemini-2.5-pro',
   ],
+};
+
+const getModelCandidates = (taskType: keyof typeof MODEL_FALLBACKS): string[] => {
+  const fallbackModels = MODEL_FALLBACKS[taskType] ?? [
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash-lite-001',
+  ];
+
+  // Keep the configured primary model first for predictable demo behavior.
+  return [PRIMARY_GEMINI_MODEL, ...fallbackModels].filter(
+    (value, index, arr) => Boolean(value) && arr.indexOf(value) === index
+  );
 };
 
 /**
@@ -200,8 +216,8 @@ const callGeminiAPI = async (
   taskType: keyof typeof MODEL_FALLBACKS,
   prompt: string,
   imageB64?: string
-): Promise<any> => {
-  const modelCandidates = MODEL_FALLBACKS[taskType] ?? ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.0-flash-lite-001'];
+): Promise<{ result: any; modelUsed: string }> => {
+  const modelCandidates = getModelCandidates(taskType);
   const model = ai.models.generateContent;
 
   const parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[] = [
@@ -248,14 +264,14 @@ const callGeminiAPI = async (
         if (taskType === 'GENERATE_JSON') {
           const payload = extractJsonPayload(text);
           try {
-            return JSON.parse(payload);
+            return { result: JSON.parse(payload), modelUsed: modelName };
           } catch {
             // If the model violates JSON constraints, treat as failure so we can retry / rotate models.
             throw new Error('Model returned invalid JSON');
           }
         }
 
-        return text;
+        return { result: text, modelUsed: modelName };
       } catch (error: any) {
         attempt++;
 
@@ -414,6 +430,7 @@ router.post('/analysis', async (req: Request, res: Response) => {
     });
 
     let result: any;
+    let modelUsed: string | null = null;
     let diseaseRisks: any = null;
     let weatherAvailable = false;
 
@@ -429,7 +446,8 @@ router.post('/analysis', async (req: Request, res: Response) => {
         );
 
         // Requirement 5.5: Sanitize response before returning to client
-        result = sanitizeResponse(geminiResult);
+        result = sanitizeResponse(geminiResult.result);
+        modelUsed = geminiResult.modelUsed;
 
         // Cache the result for future fallback
         // Requirement 16.1: Cache results for graceful degradation
@@ -452,10 +470,12 @@ router.post('/analysis', async (req: Request, res: Response) => {
 
         if (useCachedGemini) {
           result = cachedGeminiResult;
+          modelUsed = 'cached';
         }
       }
     } else if (useCachedGemini) {
       result = cachedGeminiResult;
+      modelUsed = 'cached';
     }
 
     // If we couldn't obtain any Gemini result (live or cached), fail fast with a clear service error.
@@ -618,6 +638,10 @@ router.post('/analysis', async (req: Request, res: Response) => {
       },
       timestamp: new Date().toISOString()
     };
+
+    if (modelUsed) {
+      response.modelUsed = modelUsed;
+    }
 
     // Add degradation warnings if applicable
     // Requirement 16.3, 16.4: Inform user of service limitations
