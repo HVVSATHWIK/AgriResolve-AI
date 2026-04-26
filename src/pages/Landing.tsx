@@ -66,7 +66,7 @@ export function Landing() {
       </header>
 
       <main className="relative z-20">
-        <section data-scroll-container className="relative h-[420vh]">
+        <section data-scroll-container className="relative h-[300vh]">
           <div data-landing-stage className="relative h-screen overflow-hidden">
             {sections.map((section, index) => (
               <TextSection key={section.title} index={index} section={section} />
