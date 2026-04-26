@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HistorySidebar } from '../features/history/components/HistorySidebar';
 import { CropAnalysisRecord } from '../features/history/types';
-import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin, Sprout } from 'lucide-react';
+import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin, Sprout, Globe } from 'lucide-react';
 import { InsightsDashboard } from '../features/assistant/components/InsightsDashboard';
 import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useAuth } from '../contexts/AuthContext';
 import { buildAppRoute } from '../lib/navigation';
+import { LanguageSelector } from './LanguageSelector';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -148,7 +149,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
 
             {/* Navigation */}
             <div className="space-y-1.5">
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Navigation</h3>
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">{t('nav_section', 'Navigation')}</h3>
 
               <button
                 onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
@@ -167,7 +168,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/diagnosis' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <Plus className="w-4 h-4" />
-                <span className="text-sm">{t('new_scan', { defaultValue: 'New Analysis' })}</span>
+                <span className="text-sm">{t('new_scan', 'New Analysis')}</span>
               </button>
 
               <button
@@ -178,7 +179,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/seed-decision' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <Sprout className="w-4 h-4" />
-                <span className="text-sm">Seed Decision</span>
+                <span className="text-sm">{t('seed_decision_title', 'Seed Decision')}</span>
               </button>
             </div>
 
@@ -197,7 +198,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
 
             {/* Current Season */}
             <div>
-              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Current Season</h3>
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">{t('current_season', 'Current Season')}</h3>
               <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-base font-bold text-gray-800">{seasonInfo.name} {seasonInfo.year}</h3>
@@ -282,10 +283,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
 
           {/* ── Bottom Pinned Section ── */}
           <div className="shrink-0 border-t border-gray-100 bg-white">
+
+            {/* Language Selector */}
+            <div className="px-3 pt-3">
+              <LanguageSelector />
+            </div>
+
             {currentUser && (
-              <div className="px-3 pt-3 pb-2">
-                <div className="group rounded-xl p-2.5 flex items-center gap-3 hover:bg-gray-50 transition-all duration-200 cursor-default">
-                  {/* Avatar with online indicator */}
+              <div className="px-3 pt-3">
+                {/* User row */}
+                <div className="rounded-xl p-2.5 flex items-center gap-3 bg-gray-50 border border-gray-100">
+                  {/* Avatar */}
                   <div className="relative shrink-0">
                     {currentUser.photoURL ? (
                       <img
@@ -299,7 +307,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                         {(currentUser.displayName ?? currentUser.email ?? 'U')[0].toUpperCase()}
                       </div>
                     )}
-                    {/* Online status dot */}
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full" />
                   </div>
 
@@ -312,23 +319,23 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
                       {currentUser.email}
                     </p>
                   </div>
-
-                  {/* Logout */}
-                  <button
-                    onClick={() => {
-                      signOut().then(() => navigate('/login'));
-                    }}
-                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-200 opacity-0 group-hover:opacity-100 shrink-0"
-                    aria-label="Sign out"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
                 </div>
+
+                {/* Always-visible Sign Out button */}
+                <button
+                  id="sidebar-sign-out-btn"
+                  onClick={() => signOut().then(() => navigate('/login'))}
+                  className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-50 border border-red-100 text-red-600 hover:bg-red-100 active:scale-[0.98] transition-all font-bold text-sm"
+                  aria-label={t('sign_out', 'Sign Out')}
+                >
+                  <LogOut className="w-4 h-4" />
+                  {t('sign_out', 'Sign Out')}
+                </button>
               </div>
             )}
+
             {/* Copyright */}
-            <div className="px-4 py-2 text-center border-t border-gray-50">
+            <div className="px-4 py-3 text-center">
               <p className="text-[10px] text-gray-300 font-medium tracking-wide">© 2026 AgriResolve AI</p>
             </div>
           </div>

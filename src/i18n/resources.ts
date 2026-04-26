@@ -165,7 +165,34 @@ export const resources = {
             bio_welcome_title: "Hidden Treasure Detector",
             bio_welcome_desc: "Identify weeds, medicinal plants, and potential bio-fertilizers.",
             bio_upload_title: "Upload Plant Photo",
-            bio_upload_desc: "Take a clear photo of the plant or weed you want to identify."
+            bio_upload_desc: "Take a clear photo of the plant or weed you want to identify.",
+
+            // Auth / Profile
+            sign_out: "Sign Out",
+            account: "Account",
+            language: "Language",
+            profile: "Profile",
+            nav_profile: "Profile",
+            nav_section: "Navigation",
+            current_season: "Current Season",
+            system_active: "System Active",
+            coming_soon: "Soon",
+
+            // Dashboard Stats
+            scans_this_month: "Scans This Month",
+            last_diagnosis: "Last Diagnosis",
+            season_day: "Season Day",
+            no_scans_yet: "No scans yet",
+            scans_recorded: "recorded",
+
+            // App Actions
+            action_scan: "Start Diagnosis",
+            action_simulate: "Simulate Farm",
+            action_seed: "Assess Seed Risk",
+            action_discover: "Analyze Weeds",
+            action_market: "Plan Crop Choices",
+            seed_decision_title: "Seed Decision Engine",
+            seed_decision_desc: "Pre-sowing risk scoring with weather-aware inputs"
         }
     },
     hi: {
