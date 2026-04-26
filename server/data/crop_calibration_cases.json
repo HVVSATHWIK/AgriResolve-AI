@@ -1,0 +1,119 @@
+[
+  {
+    "id": "cotton-ideal-loam",
+    "crop": "cotton",
+    "soilType": "loam",
+    "expectedRainfall": "moderate",
+    "expectedTempAvg": 28,
+    "expectedRiskLevel": "Low",
+    "notes": "Ideal sowing window with balanced soil and temperature"
+  },
+  {
+    "id": "paddy-ideal-clay-high-rain",
+    "crop": "paddy",
+    "soilType": "clay",
+    "expectedRainfall": "high",
+    "expectedTempAvg": 28,
+    "expectedRiskLevel": "Low",
+    "notes": "Contrasting reference case: paddy should benefit from wet clay conditions"
+  },
+  {
+    "id": "cotton-clay-heavy-rain",
+    "crop": "cotton",
+    "soilType": "clay",
+    "expectedRainfall": "high",
+    "expectedTempAvg": 28,
+    "expectedRiskLevel": "High",
+    "notes": "Same soil and rainfall as paddy, but cotton should suffer waterlogging stress"
+  },
+  {
+    "id": "chilli-loam-low-rain-borderline",
+    "crop": "chilli",
+    "soilType": "loam",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 23,
+    "expectedRiskLevel": "Medium",
+    "notes": "Borderline moisture stress with temperature still near the lower comfort band"
+  },
+  {
+    "id": "chilli-clay-heavy-rain",
+    "crop": "chilli",
+    "soilType": "clay",
+    "expectedRainfall": "high",
+    "expectedTempAvg": 26,
+    "expectedRiskLevel": "High",
+    "notes": "Heavy soil plus rain should be unfavorable for chilli"
+  },
+  {
+    "id": "maize-preferred-loam",
+    "crop": "maize",
+    "soilType": "sandy-loam",
+    "expectedRainfall": "moderate",
+    "expectedTempAvg": 22,
+    "expectedRiskLevel": "Low",
+    "notes": "Preferred soil with stable mid-range conditions"
+  },
+  {
+    "id": "maize-sand-low-rain",
+    "crop": "maize",
+    "soilType": "sand",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 17,
+    "expectedRiskLevel": "High",
+    "notes": "Dry, free-draining soil should raise establishment risk"
+  },
+  {
+    "id": "cotton-sandy-loam-low-rain",
+    "crop": "cotton",
+    "soilType": "sandy-loam",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 17,
+    "expectedRiskLevel": "High",
+    "notes": "Cotton should be stressed by dry, fast-draining conditions"
+  },
+  {
+    "id": "paddy-loam-low-rain",
+    "crop": "paddy",
+    "soilType": "loam",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 22,
+    "expectedRiskLevel": "High",
+    "notes": "Paddy should be penalized when both soil and rainfall are too dry"
+  },
+  {
+    "id": "paddy-sand-low-rain-critical",
+    "crop": "paddy",
+    "soilType": "sand",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 18,
+    "expectedRiskLevel": "Critical",
+    "notes": "Extreme mismatch: paddy in sandy soil with low rainfall and sub-minimum temperature"
+  },
+  {
+    "id": "maize-loam-low-temp",
+    "crop": "maize",
+    "soilType": "loam",
+    "expectedRainfall": "moderate",
+    "expectedTempAvg": 15,
+    "expectedRiskLevel": "Medium",
+    "notes": "Temperature edge case just below maize germination minimum"
+  },
+  {
+    "id": "cotton-loam-low-temp-borderline",
+    "crop": "cotton",
+    "soilType": "loam",
+    "expectedRainfall": "low",
+    "expectedTempAvg": 19,
+    "expectedRiskLevel": "Medium",
+    "notes": "Borderline case where soil is fine but moisture and temperature are both slightly weak"
+  },
+  {
+    "id": "paddy-clay-hot-but-safe",
+    "crop": "paddy",
+    "soilType": "clay",
+    "expectedRainfall": "high",
+    "expectedTempAvg": 34,
+    "expectedRiskLevel": "Low",
+    "notes": "Upper temperature edge remains within paddy's tolerable range"
+  }
+]

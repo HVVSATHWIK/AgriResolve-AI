@@ -109,7 +109,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       }
 
       // Redirect to intended destination or dashboard
-      const from = (location.state as LoginLocationState | null)?.from?.pathname || '/';
+      const from = (location.state as LoginLocationState | null)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (err: unknown) {
       // Map Firebase errors to user-friendly messages
@@ -154,7 +154,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     try {
       await signInWithGoogle();
       if (onSuccess) onSuccess();
-      const from = (location.state as LoginLocationState | null)?.from?.pathname || '/';
+      const from = (location.state as LoginLocationState | null)?.from?.pathname || '/dashboard';
       navigate(from, { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to sign in with Google');

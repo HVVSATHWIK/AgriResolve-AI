@@ -127,7 +127,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
             }
 
             // Navigate to dashboard automatically upon success
-            navigate('/', { replace: true });
+            navigate('/dashboard', { replace: true });
         } catch (err: unknown) {
             const errorMessage = mapAuthError(err instanceof Error ? err.message : '');
             setError(errorMessage);
@@ -164,7 +164,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
         try {
             await signInWithGoogle();
             if (onSuccess) onSuccess();
-            navigate('/', { replace: true });
+            navigate('/dashboard', { replace: true });
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'Failed to sign in with Google');
         } finally {

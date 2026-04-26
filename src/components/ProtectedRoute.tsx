@@ -38,6 +38,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { currentUser, loading } = useAuth();
   const location = useLocation();
 
+  // Redirect public root path heavily? No, we don't need to intercept `/` here 
+  // because `<Route path="/" element={<Landing />} />` is declared *outside* ProtectedRoute.
+
   // Show loading spinner while auth state is being determined
   if (loading) {
     return (

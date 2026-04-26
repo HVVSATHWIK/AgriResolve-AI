@@ -11,6 +11,7 @@ import { fileURLToPath } from 'url';
 
 import { apiGateway } from './gateway/apiGateway.js';
 import { analysisRouter } from './routes/analysis.js';
+import { seedRiskRouter } from './routes/seedRisk.js';
 import timezoneRouter from './routes/timezone.js';
 import { healthRouter } from './routes/health.js';
 import { marketRouter } from './routes/market.js';
@@ -126,6 +127,9 @@ app.use('/api', analysisRouter);
 
 // Market Pulse endpoint
 app.use('/api', marketRouter);
+
+// Seed Decision Intelligence endpoint
+app.use('/api/seed-risk', seedRiskRouter);
 
 // Timezone management endpoints
 // Requirements 12.1, 12.3: User timezone detection and storage

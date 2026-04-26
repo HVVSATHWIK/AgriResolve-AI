@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HistorySidebar } from '../features/history/components/HistorySidebar';
 import { CropAnalysisRecord } from '../features/history/types';
-import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin } from 'lucide-react';
+import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin, Sprout } from 'lucide-react';
 import { InsightsDashboard } from '../features/assistant/components/InsightsDashboard';
 import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { MobileBottomNav } from './MobileBottomNav';
 import { useAuth } from '../contexts/AuthContext';
+import { buildAppRoute } from '../lib/navigation';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,15 +28,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
   const mainRef = useRef<HTMLElement>(null);
 
   const diagnosisRoute = React.useMemo(() => {
-    const params = new URLSearchParams(location.search);
-    const next = new URLSearchParams();
-
-    if (params.has('demo')) next.set('demo', params.get('demo') || '1');
-    if (params.has('judge')) next.set('judge', params.get('judge') || '1');
-
-    const query = next.toString();
-    return query ? `/diagnosis?${query}` : '/diagnosis';
+    return buildAppRoute('/diagnosis', location.search);
   }, [location.search]);
+
+  const seedDecisionRoute = React.useMemo(() => buildAppRoute('/seed-decision', location.search), [location.search]);
 
   // Scroll main content to top on route change
   useEffect(() => {
@@ -88,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
 
         {/* Mobile Header (Visible only on small screens) */}
         <div className="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40 shadow-sm safe-area-inset-top shrink-0">
-          <div className="flex items-center gap-2" onClick={() => navigate('/')}>
+          <div className="flex items-center gap-2" onClick={() => navigate('/dashboard')}>
             <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg border border-gray-100 overflow-hidden">
               <img src="/logo.png" alt="AgriResolve" className="w-full h-full object-contain" />
             </div>
@@ -132,7 +128,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
         `}>
 
           {/* ── Header & Identity (fixed at top) ── */}
-          <div className="shrink-0 p-5 border-b border-gray-100 bg-white cursor-pointer relative" onClick={() => navigate('/')}>
+          <div className="shrink-0 p-5 border-b border-gray-100 bg-white cursor-pointer relative" onClick={() => navigate('/dashboard')}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <img src="/logo.png" alt="AgriResolve Logo" className="w-full h-full object-contain" />
@@ -155,8 +151,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-2">Navigation</h3>
 
               <button
-                onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
+                onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/dashboard' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
                 <span className="text-sm">{t('nav_home', 'Hub')}</span>
@@ -172,6 +168,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, history = [], onSelect
               >
                 <Plus className="w-4 h-4" />
                 <span className="text-sm">{t('new_scan', { defaultValue: 'New Analysis' })}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  navigate(seedDecisionRoute);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${location.pathname === '/seed-decision' ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-100' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                <Sprout className="w-4 h-4" />
+                <span className="text-sm">Seed Decision</span>
               </button>
             </div>
 

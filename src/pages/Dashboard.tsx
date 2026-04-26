@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowRight, Sprout, TrendingUp, Scan } from 'lucide-react';
 import { HistoryService } from '../features/history/services/HistoryService';
 import { AgriTwinMark } from '../components/AgriTwinMark';
+import { buildAppRoute } from '../lib/navigation';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -11,23 +12,11 @@ export const Dashboard: React.FC = () => {
     const { t } = useTranslation();
     const [lastScanDate, setLastScanDate] = useState<string | null>(null);
 
-    const demoQuerySuffix = React.useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        const next = new URLSearchParams();
-
-        if (params.has('demo')) next.set('demo', params.get('demo') || '1');
-        if (params.has('judge')) next.set('judge', params.get('judge') || '1');
-
-        const serialized = next.toString();
-        return serialized ? `?${serialized}` : '';
-    }, [location.search]);
-
     const buildDiagnosisRoute = (mode?: 'bioprospector') => {
-        const params = new URLSearchParams(demoQuerySuffix.replace(/^\?/, ''));
-        if (mode) params.set('mode', mode);
-        const query = params.toString();
-        return query ? `/diagnosis?${query}` : '/diagnosis';
+        return buildAppRoute('/diagnosis', location.search, mode ? { mode } : {});
     };
+
+    const buildSeedDecisionRoute = () => buildAppRoute('/seed-decision', location.search);
 
     useEffect(() => {
         const fetchLastScan = async () => {
@@ -67,6 +56,16 @@ export const Dashboard: React.FC = () => {
             actionLabel: t('action_simulate', 'Simulate Farm'),
             icon: AgriTwinMark,
             action: () => navigate('/simulator'),
+            status: 'Active',
+            isFlagship: false
+        },
+        {
+            id: 'seed-decision',
+            title: 'Seed Decision Engine',
+            desc: 'Deterministic pre-sowing risk scoring with weather-aware inputs',
+            actionLabel: 'Assess Seed Risk',
+            icon: Sprout,
+            action: () => navigate(buildSeedDecisionRoute()),
             status: 'Active',
             isFlagship: false
         },

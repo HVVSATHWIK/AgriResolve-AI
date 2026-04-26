@@ -1,0 +1,34 @@
+{
+  "cotton": {
+    "preferredSoil": ["loam", "sandy-loam", "clay-loam"],
+    "tempMin": 18,
+    "tempOptMin": 25,
+    "tempOptMax": 32,
+    "waterReq": "moderate",
+    "toleratesWaterlogging": false
+  },
+  "chilli": {
+    "preferredSoil": ["loam", "sandy-loam", "clay-loam"],
+    "tempMin": 20,
+    "tempOptMin": 24,
+    "tempOptMax": 30,
+    "waterReq": "moderate",
+    "toleratesWaterlogging": false
+  },
+  "maize": {
+    "preferredSoil": ["loam", "sandy-loam", "silt-loam"],
+    "tempMin": 16,
+    "tempOptMin": 20,
+    "tempOptMax": 30,
+    "waterReq": "moderate",
+    "toleratesWaterlogging": false
+  },
+  "paddy": {
+    "preferredSoil": ["clay", "silty-clay", "silt", "clay-loam"],
+    "tempMin": 20,
+    "tempOptMin": 25,
+    "tempOptMax": 35,
+    "waterReq": "high",
+    "toleratesWaterlogging": true
+  }
+}

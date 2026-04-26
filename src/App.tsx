@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Diagnosis } from './pages/Diagnosis';
+import { SeedDecision } from './pages/SeedDecision';
 import { Layout } from './components/Layout';
 import { Simulator } from './pages/Simulator';
 import { MarketPulse } from './pages/MarketPulse'; // Import Market Pulse
@@ -25,6 +27,9 @@ const App: React.FC = () => {
         }}
       >
         <Routes>
+          {/* Public Landing Root */}
+          <Route path="/" element={<Landing />} />
+
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -41,12 +46,13 @@ const App: React.FC = () => {
                 <Layout>
                   <div className="min-h-screen font-inter text-gray-900 pb-16 md:pb-0">
                     <Routes>
-                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/diagnosis" element={<Diagnosis />} />
+                      <Route path="/seed-decision" element={<SeedDecision />} />
                       <Route path="/market" element={<MarketPulse />} />
                       <Route path="/chat" element={<ChatAssistant />} />
-                      {/* Redirect unknown routes to Dashboard */}
-                      <Route path="*" element={<Navigate to="/" replace />} />
+                      {/* Redirect unknown protected routes to Dashboard */}
+                      <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>
 
                     {/* Chat Widget */}
