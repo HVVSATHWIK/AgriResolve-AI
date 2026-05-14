@@ -1,201 +1,325 @@
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/3e912edf-92bb-4903-8e44-fb6d545033b7" width="100%" alt="AgriResolve AI Banner">
 
-  # AgriResolve AI
-  ### Explainable AI for Early Crop Health Risk Assessment
+<!-- Replace this with an animated .gif or .webp demo of the UI -->
+<img src="https://github.com/user-attachments/assets/3e912edf-92bb-4903-8e44-fb6d545033b7" width="100%" alt="AgriResolve AI Demo"/>
 
-  <p align="center">
-    <img src="https://img.shields.io/badge/Status-Online-success?style=for-the-badge" alt="Status">
-    <img src="https://img.shields.io/badge/AI-Gemini%202.5%20Flash--Lite-blue?style=for-the-badge" alt="AI Model">
-    <img src="https://img.shields.io/badge/Stack-React%20%7C%20Vite%20%7C%20TypeScript-blueviolet?style=for-the-badge" alt="Tech Stack">
-    <img src="https://img.shields.io/badge/Languages-10%2B-orange?style=for-the-badge" alt="Multilingual">
-  </p>
+# AgriResolve AI
+
+### Explainable AI for Early Crop Health Risk Assessment
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Online-success?style=for-the-badge" alt="Status"/>
+  <img src="https://img.shields.io/badge/AI-Gemini%202.5%20Flash--Lite-blue?style=for-the-badge" alt="AI"/>
+  <img src="https://img.shields.io/badge/Architecture-Multi--Agent-orange?style=for-the-badge" alt="Architecture"/>
+  <img src="https://img.shields.io/badge/Languages-10%20Indian%20Languages-green?style=for-the-badge" alt="Languages"/>
+</p>
+
 </div>
 
 ---
 
-## 🌾 Overview
+# 🌾 Overview
 
-**AgriResolve AI** is a diagnostic tool designed to empower farmers and agronomists with instant, explainable insights into crop health.
+**AgriResolve AI** is a multimodal crop health intelligence platform powered by a **Multi-Agent Consensus Architecture** built on **Gemini 2.5**.
 
-Built on the **Gemini 2.5** engine, it employs a unique **Multi-Agent Consensus System** where diverse AI personas (Defense, Pathology, Arbitration) debate the diagnosis in real-time before issuing a verdict. The application is fully multilingual, supporting **10 Indian languages** with instant, zero-cost switching.
+Instead of relying on a single AI inference, specialized agents collaboratively analyze crop imagery, debate possible conditions, and generate an explainable confidence-weighted assessment for farmers and agronomists.
 
-Architecture note: the frontend never talks to Gemini directly. All AI calls go through a backend proxy (`/api/analysis`) so the API key stays server-side.
+The system is designed for multilingual agricultural accessibility, explainable diagnostics, and scalable AI-assisted farming workflows.
 
-## ✨ Key Features
-
-### 🌍 Universal Multilingual Support
--   **10 Supported Languages**: English, Hindi, Telugu, Tamil, Malayalam, Kannada, Marathi, Bengali, Gujarati, Punjabi.
--   **Instant Translation Cache**: Switch languages *after* a scan without re-running the heavy analysis.
--   **Zero-Cost Switching**: Results are cached locally, so flipping between languages costs 0 API credits.
--   **Dynamic Content**: Analysis is generated in a stable English base and then translated for display to keep UI + AI output consistent and avoid mixed-language responses.
-
-### 🧠 Multi-Agent Analysis Pipeline
-1.  **👁️ Vision Agent**: Scans textures and lesions (`Gemini 2.5 Vision`).
-2.  **🛡️ Healthy Hypothesis Agent**: Argues for abiotic causes/healthy variations.
-3.  **🦠 Disease Hypothesis Agent**: Argues for potential pathology risks.
-4.  **⚖️ Arbitration Agent**: Weighs the debate and issues a final, confidence-weighted verdict.
-5.  **📝 Explanation Agent**: Generates actionable guidance.
-
-### 🎮 Immersive Experience
--   **3D Bio-Network Background**: Interactive neural particle system (`React Three Fiber`).
--   **Glassmorphism UI**: Premium "Gunmetal" aesthetic with frosted glass elements.
--   **Field Assistant Protocol**: Context-aware chat sidebar for follow-up questions.
-
-### 📍 Location-Aware Assistant (Optional)
--   **Permission-Based**: The app asks for location access only when you open the Field Assistant (you can skip).
--   **Weather/Temperature Context**: If granted, the assistant fetches current local weather via Open-Meteo (no API key) and tailors guidance (seasonality, irrigation timing, disease risk factors).
--   **Privacy-Friendly**: Uses approximate coordinates only and does not claim exact locality names.
-
-### 🎙️ Voice (Optional)
--   **STT (Speech-to-Text)**: Voice input using the browser Web Speech API.
--   **TTS (Text-to-Speech)**: The assistant can speak responses, aligned to the currently selected UI language.
-
-### 🛡️ Safety Guardrails
--   Refuses potentially dangerous instructions (e.g., chemical dosing/mixing) and provides safer next-step guidance.
-
-## 🛠️ Technology Stack
-
--   **Frontend**: React 19, Vite 6, TypeScript
--   **Backend**: Node.js, Express (`server/` → built to `dist/server/`)
--   **AI**: Google Gemini 2.5 Flash-Lite (`@google/genai`) via backend proxy
--   **State/Internationalization**: `i18next`, `react-i18next`
--   **Styling**: Tailwind CSS v4, Framer Motion
--   **3D Graphics**: React Three Fiber, Maath
-
-## 🚀 Getting Started
-
-### Prerequisites
--   Node.js (v18+)
--   Gemini API Key from [Google AI Studio](https://aistudio.google.com/)
-
-### Installation
-
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/AgroResolve-AI.git
-    cd AgriResolve-AI
-    ```
-
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
-
-3.  **Configure environment variables**
-
-  **Frontend (Vite)** — create `.env.local` in the project root:
-  ```env
-  # In production set this to your Render backend URL
-  # Example: https://agriresolve-backend.onrender.com
-  VITE_API_URL=http://localhost:3001
-
-  # Firebase Configuration (Required for Authentication)
-  # Get these values from your Firebase project settings:
-  # https://console.firebase.google.com/ → Project Settings → General
-  VITE_FIREBASE_API_KEY=your_firebase_api_key_here
-  VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
-  VITE_FIREBASE_PROJECT_ID=your_project_id
-  VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
-  VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-  VITE_FIREBASE_APP_ID=your_firebase_app_id
-  ```
-
-  **Backend (Express)** — create `.env` in the project root (used by `server/index.ts`):
-  ```env
-  # Required (either variable name works)
-  GEMINI_API_KEY=your_gemini_api_key_here
-  # or: GEMINI_SERVICE_TOKEN=your_gemini_api_key_here
-
-  # Required for session-based features
-  SESSION_SECRET=change-this-secret-in-production-use-a-long-random-string
-
-  # CORS
-  CLIENT_URL=http://localhost:5173
-  FRONTEND_URL=http://localhost:5173
-
-  NODE_ENV=development
-  PORT=3001
-  ```
-
-4.  **Run locally (two terminals)**
-
-  **Terminal A — backend**
-  ```bash
-  npm run build:server
-  npm run start:server
-  ```
-
-  **Terminal B — frontend**
-  ```bash
-  npm run dev
-  ```
-
-5.  **Health check**
-  - `GET /api/health`
-  - `GET /api/health/gemini`
-  - `POST /api/analysis`
-
-## 🌐 Deployment (Vercel + Render)
-
-### Frontend (Vercel)
-- Build command: `npm run build`
-- Output directory: `dist`
-- Env vars:
-  - `VITE_API_URL=https://<your-render-service>.onrender.com`
-  - `VITE_FIREBASE_API_KEY` (from Firebase Console)
-  - `VITE_FIREBASE_AUTH_DOMAIN` (from Firebase Console)
-  - `VITE_FIREBASE_PROJECT_ID` (from Firebase Console)
-  - `VITE_FIREBASE_STORAGE_BUCKET` (from Firebase Console)
-  - `VITE_FIREBASE_MESSAGING_SENDER_ID` (from Firebase Console)
-  - `VITE_FIREBASE_APP_ID` (from Firebase Console)
-
-### Backend (Render)
-- Uses [render.yaml](render.yaml) (build: `npm run build && npm run build:server`, start: `npm run start:server`)
-- Required env vars in Render dashboard:
-  - `GEMINI_API_KEY` (or `GEMINI_SERVICE_TOKEN`)
-  - `SESSION_SECRET`
-  - `CLIENT_URL` (your Vercel URL, e.g. `https://agri-resolve-ai.vercel.app`)
-
-## ✅ Release Workflow (Professional)
-
-Use this sequence for clean production updates:
-
-1. Remove generated artifacts before commit (logs, temp outputs, local debug reports).
-2. Run quality checks and build:
-  ```bash
-  npm run build
-  ```
-3. Deploy frontend hosting:
-  ```bash
-  firebase deploy
-  ```
-4. Commit with a clear, scoped message:
-  ```bash
-  git add .
-  git commit -m "chore: clean generated artifacts and update release documentation"
-  git push origin main
-  ```
-
-Tip: keep machine-specific files (for example editor caches and generated logs) out of commits unless they are intentionally versioned.
-
-## ⚠️ Quota & Billing
-This app uses **Gemini 2.5**, which has a strict free tier (~20 requests/day).
--   If you see **"Quota Exceeded"**, please link a billing account to your Google Cloud Project.
--   The "Pay-As-You-Go" tier is extremely cheap (~$0.10/million tokens) and removes these limits.
-
-## 🧯 Troubleshooting
-
-### `503` from `/api/analysis` (Gemini unavailable)
-- Check `GET /api/health/gemini` on your backend.
-- If it returns `503`, verify Render env vars (`GEMINI_API_KEY`/`GEMINI_SERVICE_TOKEN`) and check Render logs for Gemini errors.
-
-### Workbox `non-precached-url` / blank loads after deploy
-- This can happen if an old service worker is still cached in the browser.
-- Fix: DevTools → Application → Service Workers → **Unregister**, then **Clear site data**, then reload.
+> Architecture Note  
+> The frontend never communicates directly with Gemini APIs. All AI requests are securely routed through a backend proxy (`/api/analysis`) to protect API credentials.
 
 ---
 
-<p align="center">
-  Built with ❤️ for precision agriculture.
-</p>
+# ✨ Core Features
+
+## 🧠 Multi-Agent Consensus Pipeline
+
+AgriResolve AI uses a collaborative AI architecture:
+
+- 👁️ **Vision Agent**  
+  Performs image understanding and lesion analysis using Gemini Vision.
+
+- 🛡️ **Healthy Hypothesis Agent**  
+  Evaluates whether symptoms may result from environmental or abiotic causes.
+
+- 🦠 **Disease Hypothesis Agent**  
+  Investigates possible crop diseases and pathology indicators.
+
+- ⚖️ **Arbitration Agent**  
+  Resolves disagreements between agents and generates a confidence-weighted verdict.
+
+- 📝 **Explanation Agent**  
+  Produces actionable farmer-friendly guidance.
+
+---
+
+## 🌍 Multilingual Accessibility
+
+Supports 10 Indian languages:
+
+- English
+- Hindi
+- Telugu
+- Tamil
+- Malayalam
+- Kannada
+- Marathi
+- Bengali
+- Gujarati
+- Punjabi
+
+### Translation Architecture
+
+- Stable English-first analysis pipeline
+- Instant cached translation switching
+- Zero additional API cost when changing languages
+- Consistent multilingual UI rendering
+
+---
+
+## 🎮 Immersive Interface
+
+- Premium Glassmorphism UI
+- Gunmetal visual aesthetic
+- Interactive 3D bio-network background
+- Built using React Three Fiber and Framer Motion
+
+---
+
+## 📍 Context-Aware Agricultural Assistance
+
+Optional geolocation support enables:
+
+- Local weather-aware recommendations
+- Seasonal disease correlation
+- Irrigation timing suggestions
+- Environmental risk contextualization
+
+Weather data is fetched through **Open-Meteo** without requiring additional API keys.
+
+---
+
+## 🎙️ Voice Interaction
+
+### Speech-to-Text
+Voice input using browser Web Speech API.
+
+### Text-to-Speech
+AI responses can be spoken in the currently selected language.
+
+---
+
+## 🛡️ Safety Guardrails
+
+The system refuses unsafe agricultural instructions such as:
+- hazardous chemical mixing
+- unsafe dosage recommendations
+- harmful agricultural misuse
+
+Safer alternatives and next-step guidance are provided instead.
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+- React 19
+- Vite 6
+- TypeScript
+- Tailwind CSS v4
+- Framer Motion
+- React Three Fiber
+- Maath
+
+## Backend
+- Node.js
+- Express
+
+## AI Integration
+- Google Gemini 2.5 Flash-Lite
+- `@google/genai`
+
+## Internationalization
+- i18next
+- react-i18next
+
+---
+
+# 🚀 Quick Start
+
+<details>
+<summary><b>1. Clone Repository</b></summary>
+
+```bash
+git clone https://github.com/yourusername/AgriResolve-AI.git
+cd AgriResolve-AI
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>2. Install Dependencies</b></summary>
+
+```bash
+npm install
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>3. Configure Frontend Environment</b></summary>
+
+Create `.env.local`
+
+```env
+VITE_API_URL=http://localhost:3001
+
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_domain
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>4. Configure Backend Environment</b></summary>
+
+Create `.env`
+
+```env
+GEMINI_API_KEY=your_gemini_api_key
+
+SESSION_SECRET=your_secure_secret
+
+CLIENT_URL=http://localhost:5173
+
+PORT=3001
+```
+
+</details>
+
+---
+
+<details>
+<summary><b>5. Run the Application</b></summary>
+
+### Terminal 1 — Backend
+
+```bash
+npm run build:server
+npm run start:server
+```
+
+### Terminal 2 — Frontend
+
+```bash
+npm run dev
+```
+
+</details>
+
+---
+
+# 🧪 Health Endpoints
+
+```http
+GET /api/health
+GET /api/health/gemini
+POST /api/analysis
+```
+
+---
+
+# 🌐 Deployment
+
+## Frontend Deployment
+Recommended: Vercel
+
+### Build Command
+
+```bash
+npm run build
+```
+
+### Output Directory
+
+```bash
+dist
+```
+
+---
+
+## Backend Deployment
+Recommended: Render
+
+Required environment variables:
+
+```env
+GEMINI_API_KEY=
+SESSION_SECRET=
+CLIENT_URL=
+```
+
+---
+
+# ⚠️ Quota & Billing
+
+Gemini 2.5 free tier usage is limited.
+
+If you encounter quota issues:
+
+- Link a billing account to your Google Cloud project
+- Use Pay-As-You-Go pricing
+- Gemini token costs remain extremely low for production-scale experimentation
+
+---
+
+# 🧯 Troubleshooting
+
+## 503 Error (`/api/analysis`)
+
+Gemini API may be unreachable.
+
+Verify:
+- `GEMINI_API_KEY`
+- backend deployment status
+- `/api/health/gemini`
+
+---
+
+## Quota Exceeded
+
+The Gemini free tier has strict request limits.
+
+Enable billing on Google Cloud to remove restrictions.
+
+---
+
+## Blank Screen After Deploy
+
+Possible stale service worker issue.
+
+Fix:
+1. Open DevTools
+2. Navigate to Application → Service Workers
+3. Unregister old workers
+4. Clear site data
+5. Reload application
+
+---
+
+# ❤️ Vision
+
+AgriResolve AI aims to make advanced agricultural intelligence accessible, explainable, and multilingual for farmers across diverse agricultural ecosystems.
+
+Built for precision agriculture and AI-assisted farming workflows.
