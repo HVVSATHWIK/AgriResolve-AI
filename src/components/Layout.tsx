@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HistorySidebar } from '../features/history/components/HistorySidebar';
 import { CropAnalysisRecord } from '../features/history/types';
-import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin, Sprout, Globe } from 'lucide-react';
+import { Plus, Sun, ChevronDown, ChevronRight, History, Menu, X, LayoutGrid, LogOut, MapPin, Sprout } from 'lucide-react';
 import { InsightsDashboard } from '../features/assistant/components/InsightsDashboard';
 import { useLocationWeather } from '../features/assistant/hooks/useLocationWeather';
 import { useTranslation } from 'react-i18next';
