@@ -3,5 +3,8 @@
   "description": "An explainable agentic framework for early crop health risk assessment, providing transparent and farmer-safe guidance without treatment prescriptions.",
   "requestFramePermissions": [
     "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

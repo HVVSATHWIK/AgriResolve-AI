@@ -117,9 +117,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userCredential = await signInWithPopup(auth, provider);
       return userCredential;
     } catch (error: unknown) {
-      // Re-throw with descriptive error message
-      if (error instanceof Error && error.message.includes('popup-closed-by-user')) {
+      const errMsg = getErrorMessage(error, '');
+      if (errMsg.includes('popup-closed-by-user')) {
         throw new Error('Google sign-in was cancelled.');
+      }
+      if (errMsg.includes('unauthorized-domain') || errMsg.includes('auth/unauthorized-domain')) {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+        throw new Error(`Domain (${hostname}) is not authorized for Google Sign-In in Firebase Console. Please add "${hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`);
       }
       throw new Error(getErrorMessage(error, 'Failed to sign in with Google'));
     }

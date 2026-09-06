@@ -7,9 +7,9 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx watch --include .env server/index.ts",
     "prebuild": "node scripts/generate-og-preview.mjs",
-    "build": "vite build",
+    "build": "vite build && tsc -p server/tsconfig.json",
     "start": "node dist/server/index.js",
     "preview": "vite preview",
     "typescript": "tsc --noEmit",

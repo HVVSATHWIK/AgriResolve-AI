@@ -34,19 +34,19 @@ export interface AnalysisRequest {
  * In production → VITE_API_URL (e.g. https://agriresolve-backend.onrender.com)
  * In development → empty string (Vite proxy or same-origin)
  */
-const AZURE_API_BASE = 'https://agriresolve-ai-azfferc6bff2g6gt.germanywestcentral-01.azurewebsites.net';
+const _AZURE_API_BASE = 'https://agriresolve-ai-azfferc6bff2g6gt.germanywestcentral-01.azurewebsites.net';
 
 const resolveApiBase = (): string => {
   const raw = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/+$/, '');
-  const isLocalTarget = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw);
+  const isLocalTarget = !raw || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw);
 
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     const isHostedApp = host !== 'localhost' && host !== '127.0.0.1';
 
+    // When hosted in a full-stack container, relative /api requests route directly to the same Express backend
     if (isHostedApp && isLocalTarget) {
-      console.warn('[API Client] Hosted app detected with localhost API URL. Falling back to Azure backend.');
-      return AZURE_API_BASE;
+      return '';
     }
   }
 

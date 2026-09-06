@@ -19,8 +19,6 @@ declare module 'virtual:pwa-register' {
 
 interface ImportMetaEnv {
     readonly VITE_API_URL: string
-    readonly GEMINI_SERVICE_TOKEN: string
-    readonly VITE_GEMINI_API_KEY: string // Deprecated, kept for compat if needed, but preferred below
 }
 
 interface ImportMeta {

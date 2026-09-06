@@ -22,12 +22,12 @@ export function useScrollTimeline(
 
     const lenis = new Lenis({
       autoRaf: false,
-      duration: 1.08,
+      duration: 0.8,
       smoothWheel: true,
-      wheelMultiplier: 0.72,
-      touchMultiplier: 1,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
       syncTouch: false,
-      lerp: 0.075,
+      lerp: 0.12,
     });
 
     const onTick = (time: number) => {
@@ -36,7 +36,7 @@ export function useScrollTimeline(
 
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(onTick);
-    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.lagSmoothing(500, 33);
 
     const ctx = gsap.context(() => {
       const sections = gsap.utils.toArray<HTMLElement>('[data-text-section]');
@@ -49,7 +49,8 @@ export function useScrollTimeline(
           end: 'bottom bottom',
           pin: stage ?? true,
           pinSpacing: true,
-          scrub: 1,
+          anticipatePin: 1,
+          scrub: 0.2,
           onUpdate: (self) => {
             progressRef.current = self.progress;
           },

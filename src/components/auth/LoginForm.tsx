@@ -124,11 +124,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
    * Map Firebase auth errors to user-friendly messages
    */
   const mapAuthError = (errorMessage: string): string => {
+    if (errorMessage.includes('unauthorized-domain') || errorMessage.includes('auth/unauthorized-domain')) {
+      return `Domain unauthorized: Please add "${window.location.hostname}" to Firebase Console > Authentication > Settings > Authorized Domains.`;
+    }
     if (errorMessage.includes('user-not-found')) {
       return 'No account found with this email address';
     }
-    if (errorMessage.includes('wrong-password')) {
-      return 'Incorrect password. Please try again';
+    if (errorMessage.includes('wrong-password') || errorMessage.includes('invalid-credential')) {
+      return 'Incorrect email or password. Please try again';
     }
     if (errorMessage.includes('invalid-email')) {
       return 'Please enter a valid email address';
@@ -142,7 +145,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
     if (errorMessage.includes('user-disabled')) {
       return 'This account has been disabled. Please contact support';
     }
-    return 'Failed to sign in. Please try again';
+    return errorMessage || 'Failed to sign in. Please try again';
   };
 
   /**

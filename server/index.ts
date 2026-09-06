@@ -7,7 +7,9 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { createServer as createViteServer } from 'vite';
 
 import { apiGateway } from './gateway/apiGateway.js';
 import { analysisRouter } from './routes/analysis.js';
@@ -43,22 +45,17 @@ const io = new SocketIOServer(server, {
   }
 });
 
-// Security: Bind to 0.0.0.0 in production for Render/Docker, localhost in dev
-const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+// Bind to 0.0.0.0 for container accessibility
+const HOST = '0.0.0.0';
 
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.PORT || '3000', 10);
 
-// Security middleware
+// Security middleware (configured to allow iframe rendering in preview environment)
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", "ws:", "wss:"]
-    }
-  }
+  frameguard: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+  contentSecurityPolicy: false,
 }));
 
 // CORS configuration for frontend communication
@@ -144,10 +141,35 @@ websocketManager.initialize(io);
 // Error handling middleware
 app.use(errorHandler);
 
-// Start server only if run directly
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// Mount Vite middleware in development or serve static files in production
+async function startServer() {
+  if (process.env.NODE_ENV !== 'production') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  } else {
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const clientBuildPath = path.join(__dirname, '..'); // Points to dist/
+
+    app.use(express.static(clientBuildPath));
+
+    app.get(/(.*)/, (req, res) => {
+      if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+      }
+      const filePath = path.join(clientBuildPath, req.path);
+      if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+      } else {
+        res.sendFile(path.join(clientBuildPath, 'index.html'));
+      }
+    });
+  }
+
   server.listen(PORT, HOST, () => {
-    logger.info(`🚀 AgriResolve Collaborative Server running on ${HOST}:${PORT}`);
+    logger.info(`🚀 AgriResolve Collaborative Server running on http://${HOST}:${PORT}`);
     logger.info(`📡 WebSocket server initialized`);
     logger.info(`🔒 Security middleware active`);
     logger.info(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -158,37 +180,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   });
 }
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  // The server is built to dist/server/index.js, so the frontend is at ../../dist
-  // actually, based on tsconfig.server.json outDir is ../dist/server
-  // and vite builds to dist/
-  // so from dist/server/index.js, we need to go up one level to dist/
-
-  // Wait, let's double check the build output structure.
-  // Vite builds to 'dist' (index.html, assets, etc)
-  // Server builds to 'dist/server' (index.js, etc)
-
-  const clientBuildPath = path.join(__dirname, '..'); // This points to dist/
-
-  app.use(express.static(clientBuildPath));
-
-  // Handle React routing, return all requests to React app
-  // Handle React routing, return all requests to React app
-  // Fix for PathError: Missing parameter name at index 1: *
-  app.get(/(.*)/, (req, res) => {
-    // skip api routes
-    if (req.path.startsWith('/api')) {
-      return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    // Check if file exists, otherwise serve index.html
-    const filePath = path.join(clientBuildPath, req.path);
-    if (require('fs').existsSync(filePath)) {
-      res.sendFile(filePath);
-    } else {
-      res.sendFile(path.join(clientBuildPath, 'index.html'));
-    }
+// Start server only if run directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  startServer().catch((err) => {
+    logger.error('Failed to start server:', err);
   });
 }
 

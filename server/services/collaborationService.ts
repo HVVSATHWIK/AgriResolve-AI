@@ -207,8 +207,7 @@ class CollaborationService {
 
       logger.info('Collaboration service database initialized');
     } catch (error) {
-      logger.error('Failed to initialize collaboration service database:', error);
-      throw error;
+      logger.warn('Failed to initialize collaboration service database (running without DB):', error);
     }
   }
 

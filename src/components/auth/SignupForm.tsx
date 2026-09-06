@@ -140,6 +140,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
      * Map Firebase auth errors to user-friendly messages
      */
     const mapAuthError = (errorMessage: string): string => {
+        if (errorMessage.includes('unauthorized-domain') || errorMessage.includes('auth/unauthorized-domain')) {
+            return `Domain unauthorized: Please add "${window.location.hostname}" to Firebase Console > Authentication > Settings > Authorized Domains.`;
+        }
         if (errorMessage.includes('email-already-in-use')) {
             return 'An account already exists with this email address';
         }
@@ -152,7 +155,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSuccess }) => {
         if (errorMessage.includes('network-request-failed')) {
             return 'Network error. Please check your connection';
         }
-        return 'Failed to create account. Please try again';
+        return errorMessage || 'Failed to create account. Please try again';
     };
 
     /**

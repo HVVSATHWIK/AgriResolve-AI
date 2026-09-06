@@ -8,14 +8,8 @@
 
 import { callAnalysisAPI } from './apiClient';
 
-// API key should be in VITE_GEMINI_API_KEY
-const rawKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (rawKey) {
-    console.log(
-        '[Gemini Service] Client-Side Mode Active.'
-    );
-}
+// All Gemini API calls are securely proxied through the backend server (/api/analysis).
+// The client never exposes or handles API keys directly.
 
 // Model Registry - kept for type compatibility
 const MODEL_FALLBACKS = {
